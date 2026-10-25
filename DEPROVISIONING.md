@@ -7,7 +7,21 @@ As of Launch Phase 1, the infrastructure destruction process is **manual**. The 
 - **Data Retention**: Manual deprovisioning ensures you have a chance to back up or verify data before the final "purge".
 - **RDS Schema**: The current `provision_tenant` logic creates a specific Postgres schema; destroying the infrastructure via Terraform preserves the shared RDS but requires a manual `DROP SCHEMA` to fully clean up.
 
-## Step-by-Step Deprovisioning
+## Quick Teardown for Test Tenants
+
+To automatically tear down ephemeral test tenants created by `make test-provision` without touching the core infrastructure:
+
+```bash
+# Tear down all test-* tenants in one command:
+make clean-test-tenants
+
+# Or tear down a specific tenant:
+./teardown-test-tenants.sh test-dify-5902
+```
+
+This command synchronizes the tenant configurations from S3, executes a targeted `terraform destroy` against the test modules, and cleans up both local and remote S3 configuration files.
+
+## Step-by-Step Manual Deprovisioning (Production Tenants)
 
 ### 1. Destroy Infrastructure (Terraform)
 Navigate to the terraform directory on a machine with AWS access and target the specific tenant module.

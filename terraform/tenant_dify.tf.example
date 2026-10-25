@@ -21,7 +21,7 @@ module "dify_acme" {
   subdomain         = "dify-acme"
   container_image   = "langgenius/dify-api:latest"
   container_port    = 5001
-  health_check_path = "/healthz"
+  health_check_path = "/health"
   cpu               = 1024 # 1.0 vCPU
   memory            = 2048 # 2048 MiB
   enable_redis      = true # Injects a local redis:alpine sidecar on 127.0.0.1:6379 ($0 extra cost!)
@@ -29,6 +29,7 @@ module "dify_acme" {
   # Environment configuration for Dify with RDS pgvector and Redis sidecar
   environment_variables = {
     MODE                   = "api"
+    MIGRATION_ENABLED      = "true"
     LOG_LEVEL              = "INFO"
     SECRET_KEY             = "trybase-dify-secret-key-change-in-production"
     

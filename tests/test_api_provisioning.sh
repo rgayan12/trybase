@@ -116,15 +116,28 @@ EOF
         echo -e "Live Endpoint: ${CYAN}${ENDPOINT}${RESET}"
         ALB_HOST=$(aws elbv2 describe-load-balancers --region "$REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
         echo -e "Probing ALB endpoint (waiting for Fargate container health check)..."
+        
+        PROBE_PATH="/"
+        if [ "$WORKLOAD" == "dify" ]; then
+            PROBE_PATH="/health"
+        fi
+
         HTTP_CODE="000"
-        for i in {1..10}; do
-            HTTP_CODE=$(curl -s -k -o /dev/null -w "%{http_code}" -H "Host: ${TENANT_ID}.${BASE_DOMAIN}" "https://${ALB_HOST}" 2>/dev/null || echo "000")
-            if [[ "$HTTP_CODE" =~ ^[234] ]]; then
+        for i in {1..12}; do
+            HTTP_CODE=$(curl -s -k -o /dev/null -w "%{http_code}" -H "Host: ${TENANT_ID}.${BASE_DOMAIN}" "https://${ALB_HOST}${PROBE_PATH}" 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" =~ ^[23] ]]; then
                 break
             fi
             sleep 5
         done
-        echo -e "HTTP Response Code: ${GREEN}${HTTP_CODE}${RESET}\n"
+        echo -e "HTTP Response Code: ${GREEN}${HTTP_CODE}${RESET}"
+        
+        if [ "$WORKLOAD" == "dify" ]; then
+            HEALTH_PAYLOAD=$(curl -s -k -H "Host: ${TENANT_ID}.${BASE_DOMAIN}" "https://${ALB_HOST}/health" 2>/dev/null || echo "")
+            echo -e "Dify API Health Status: ${CYAN}${HEALTH_PAYLOAD}${RESET}\n"
+        else
+            echo ""
+        fi
         return 0
     else
         echo -e "\n${RED}❌ FAIL: ${WORKLOAD} failed with status: ${STATUS}${RESET}"

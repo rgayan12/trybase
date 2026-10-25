@@ -10,6 +10,7 @@ help:
 	@echo "  make all            Deploy both Control Plane and AWS Fleet"
 	@echo "  make sync           Sync remote tenant state from S3 to local Git"
 	@echo "  make test-provision Test provisioning workloads (WORKLOAD=hello|n8n|dify|agent|all)"
+	@echo "  make clean-test-tenants Tear down ephemeral test tenants safely"
 	@echo "  make clean          Clean orphaned AWS Lambda ENIs"
 
 control-plane:
@@ -43,6 +44,9 @@ sync:
 
 test-provision:
 	@./tests/test_api_provisioning.sh $(WORKLOAD)
+
+clean-test-tenants:
+	@./teardown-test-tenants.sh $(TENANT)
 
 clean:
 	@./cleanup-enis.sh

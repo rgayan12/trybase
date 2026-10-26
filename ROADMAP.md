@@ -11,20 +11,20 @@
                                    │
      ┌─────────────────────────────┴─────────────────────────────┐
      ▼                                                           ▼
-PHASE 1: THE STAR MAGNET                                    PHASE 2: THE CORE MOATS
-(Immediate Launch & Community Traction)                     (Engineering Deep Defensibility)
+PHASE 1: DEVELOPER EXPERIENCE & ECOSYSTEM                   PHASE 2: DEEP PLATFORM CAPABILITIES
+(Public Release & Ecosystem Onboarding)                     (Engineering Defensible Infrastructure)
   1.1. Root README.md Overhaul                                2.1. TryBase MCP Server (Autonomous SRE)
   1.2. OpenClaw Workload Adapter                              2.2. Live Log Streaming in Web Dashboard
-  1.3. 60-Second Terminal GIF Demo                            2.3. Zero-Env Kernel Daemon (SO_PEERCRED)
-  1.4. Public Launch Kit (Show HN / Reddit / X)               2.4. Tenant-Scoped S3 Backups & DR
+  1.3. 60-Second Terminal Demo                                2.3. Zero-Env Kernel Daemon (SO_PEERCRED)
+  1.4. Community Onboarding Documentation                      2.4. Tenant-Scoped S3 Backups & DR
                                                               2.5. FinOps Scale-to-Zero Scheduling
 ```
 
 ---
 
-## Phase 1: The "Star Magnet" (Immediate Launch Package)
+## Phase 1: Developer Experience & Ecosystem Expansion
 
-**Goal:** Publish on GitHub, Hacker News ("Show HN"), Reddit (`r/selfhosted`, `r/LocalLLaMA`), and X to drive fast developer adoption and GitHub stars.
+**Goal:** Provide a seamless developer onboarding experience, production-ready documentation, and out-of-the-box support for leading open-source agent runtimes.
 
 ### 1.1. Root `README.md` Overhaul
 * Re-align the front page from legacy single-purpose messaging to:
@@ -52,17 +52,16 @@ PHASE 1: THE STAR MAGNET                                    PHASE 2: THE CORE MO
   * Instant orchestration: Step Functions $\rightarrow$ CodeBuild $\rightarrow$ Fargate task $\rightarrow$ ALB SSL route $\rightarrow$ `HTTP 200` in <90s.
   * Cleaning up with `make clean-test-tenants`.
 
-### 1.4. Public Launch Kit
-* Prepared copy and technical breakdown for:
-  * **Hacker News**: *"Show HN: TryBase – Open-source cloud engine for autonomous AI agents"* (focus on `SO_PEERCRED`, link-local STS, and avoiding the Railway breach).
-  * **Reddit**: Posts tailored for `r/selfhosted`, `r/LocalLLaMA`, and `r/DevOps`.
-  * **X / Twitter**: Technical thread highlighting the architecture manifesto.
+### 1.4. Community Documentation & Technical Walkthrough
+* Publish technical walkthroughs and architectural deep dives:
+  * Security breakdown focusing on `SO_PEERCRED`, link-local STS, and zero-static-key isolation.
+  * Integration guides for open-source communities (`r/selfhosted`, `r/LocalLLaMA`, and `r/DevOps`).
 
 ---
 
-## Phase 2: The Core Product Moats (Engineering the Moat)
+## Phase 2: Core Platform Capabilities (Engineering Deep Defensibility)
 
-**Goal:** Build the deep technical differentiators that make TryBase impossible for traditional container hosting platforms to replicate.
+**Goal:** Build the deep technical capabilities that provide hardware-level isolation, zero-secret security, and autonomous operations.
 
 ### 2.1. The TryBase MCP Server (`trybase-mcp`)
 * Implement an Anthropic **Model Context Protocol (MCP)** server enabling AI assistants (Claude Desktop, Cursor, OpenClaw, autonomous agents) to act as an **Autonomous Cloud SRE**.
@@ -120,7 +119,7 @@ PHASE 1: THE STAR MAGNET                                    PHASE 2: THE CORE MO
 | **Architecture Manifesto** | Deep-tech whitepaper | ✅ **Complete** | `adhoc/design-notes.md` (Security, Railway analysis, Moats). |
 | **Strategic Roadmap** | Execution plan | ✅ **Complete** | `ROADMAP.md`. |
 | **Root README Overhaul** | Public launch front page | ⏳ *Next* | `readme.md` positioning & quickstart. |
-| **OpenClaw Adapter** | 5th viral archetype | ⏳ *Next* | `tenant_openclaw.tf.example` + CodeBuild hook. |
+| **OpenClaw Adapter** | 5th platform archetype | ⏳ *Next* | `tenant_openclaw.tf.example` + CodeBuild hook. |
 | **TryBase MCP Server** | Autonomous Cloud SRE | 📋 *Planned* | `trybase-mcp` package. |
 | **Live Log Streaming** | Observability UI | 📋 *Planned* | React dashboard CloudWatch tailing. |
 | **Zero-Env Daemon** | `SO_PEERCRED` sidecar | 📋 *Planned* | In-task Unix socket secret daemon. |

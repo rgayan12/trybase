@@ -64,7 +64,19 @@ This document tracks the development plan, our current progress, and the strateg
   - [x] Link production domain (`trybase.io`).
   - [x] Post to communities (Indie Hackers, Product Hunt, Reddit).
 
+## Phase 6: Autonomous AI Agent Platform & Open-Source Launch - [ACTIVE]
+
+**Goal:** Expand TryBase beyond single-purpose automation into the premier open-source cloud infrastructure engine for autonomous AI agents and workflows.
+
+* 📋 **Architecture & Moats**: Fully documented in [`adhoc/design-notes.md`](adhoc/design-notes.md).
+* 📋 **Launch Roadmap & Execution**: Fully tracked in [`ROADMAP.md`](ROADMAP.md).
+* [x] **Workload Archetype Battery**: Verified `hello`, `agent` (link-local STS Bedrock), `n8n` (schema-per-tenant), and `dify` (dedicated DB, `pgvector`, Redis sidecar).
+* [x] **Teardown Automation**: Automated `make clean-test-tenants` (purging 85 test resources cleanly).
+* [x] **Adapter Contribution Guide**: Standardized specification in `CONTRIBUTING.md` and `terraform/tenant_adapter_template.tf.example`.
+* [ ] **Public Launch Package**: Overhaul `readme.md` and build the `openclaw` adapter.
+* [ ] **Core Product Moats**: Implement TryBase MCP Server, Live CloudWatch Log Streaming, and `SO_PEERCRED` Zero-Env Secret Daemon.
+
 ---
 
 > [!NOTE]
-> The orchestrator is now 100% functional. The remaining items are primarily "frontend deployment" and "marketing" tasks.
+> For active engineering priorities and milestone tracking, refer to [`ROADMAP.md`](ROADMAP.md).

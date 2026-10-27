@@ -1,82 +1,107 @@
-# Project Plan: Multi-Tenant n8n Hosting SaaS
+# Project Plan: TryBase — The Autonomous Cloud Engine for AI Agents & Workflows
 
-This document tracks the development plan, our current progress, and the strategic positioning for the business.
-
-## Phase 1: Minimum Viable Product (MVP) - [COMPLETED]
-
-**Goal:** Create a functioning system that can automatically provision and de-provision a dedicated n8n instance for a new tenant.
-
-### Key Steps
-- [x] **1. Initial Design & Scoping:** Architecture decided (Shared VPC, Fargate per tenant).
-- [x] **2. Project & Terraform Setup:** Modules created, remote state locked in S3.
-- [x] **3. Develop Shared Infrastructure:** VPC, ALB, and RDS Postgres online.
-- [x] **4. Develop Tenant Module:** ECS Service, IAM roles, and target groups.
-
-## Phase 2: Automation & Production Hardening - [COMPLETED]
-
-**Goal:** Remove humans from the loop. A tenant must be provisioned instantly via an API call.
-
-- [x] **5. Automate Tenant Provisioning Pipeline**
-  - [x] Designed AWS Step Functions orchestrator.
-  - [x] Created `create-schema` Lambda (fixed arm64 architecture for Graviton performance).
-  - [x] Created CodeBuild pipeline to dynamically inject `tenant_id` and unique encryption keys into Terraform.
-  - [x] Exposed `POST /provision` via API Gateway.
-- [x] **6. End-to-End Verification**
-  - [x] Successfully dispatched provisioning for `neat-byte-spins`.
-  - [x] Verified full handshake: Browser -> API -> Step Function -> RDS Schema -> Supabase Notification.
-
-## Phase 3: Marketing & Frontend UX - [COMPLETED]
-
-**Goal:** Create a high-converting front door that targets B2B/agencies and accurately prices the underlying AWS isolation.
-
-- [x] **7. Brand & Strategy Setup**
-  - [x] Confirmed premium positioning strategy. Focus heavily on Fargate container isolation and dedicated DB schemas vs. "shared hosting" alternatives.
-- [x] **8. Build the Landing Page**
-  - [x] Created React + Vite single-page app in `nexscale-web/`.
-  - [x] Styled cinematic dark-mode glassmorphism UI with mobile-responsive navigation.
-  - [x] Built the "Cinematic Flow Demo" showing live provisioning steps.
-- [x] **9. Go-To-Market Pricing Strategy**
-  - [x] Implemented a **"Trust Ramp"** strategy based on PLG economics.
-  - [x] 7-Day Free Trials with countdown timer urgency.
-
-## Phase 4: Production Polish & Security - [COMPLETED]
-
-**Goal:** Shield the provisioning API from abuse and ensure a snappy, "instant" user experience.
-
-- [x] **10. Dashboard Experience**
-  - [x] Implemented **Optimistic UI Updates** in the dashboard. The workspace claims its ID and shows the provisioning terminal instantly.
-  - [x] Added "Targeted Provisioning" to ensure license slots are mapped correctly to infrastructure.
-- [x] **11. Infrastructure Security & Fixes**
-  - [x] Implemented Independent Encryption Key generation per tenant in CodeBuild.
-  - [x] Relaxed Lambda validation to support hyphenated IDs (e.g., `cloud-data-flows`).
-  - [x] Hardened Supabase RLS policies to allow authenticated user updates.
-  - [x] Fixed Realtime subscription racing issues during React Strict Mode re-mounts.
-
-## Phase 5: Go-Live Checklist - [COMPLETED]
-
-- [x] **12. Final Control Plane Lockdown & Fixes**
-  - [x] **Realtime Fix**: Enable `workspaces` in the `supabase_realtime` publication.
-  - [x] **Email Fix**: Ensure `RESEND_API_KEY` is set in Supabase Secrets (`supabase secrets set`).
-  - [x] Re-enable the JWT Authorizer in `apigateway.tf`.
-  - [x] Add rate-limiting to the `$default` stage in API Gateway.
-- [x] **13. Deployment & Launch**
-  - [x] Deploy static frontend to Vercel/Netlify.
-  - [x] Link production domain (`trybase.io`).
-  - [x] Post to communities (Indie Hackers, Product Hunt, Reddit).
-
-## Phase 6: Autonomous AI Agent Platform & Open-Source Launch - [ACTIVE]
-
-**Goal:** Expand TryBase beyond single-purpose automation into the premier open-source cloud infrastructure engine for autonomous AI agents and workflows.
-
-* 📋 **Architecture & Moats**: Fully documented in [`adhoc/design-notes.md`](adhoc/design-notes.md).
-* 📋 **Launch Roadmap & Execution**: Fully tracked in [`ROADMAP.md`](ROADMAP.md).
-* [x] **Workload Archetype Battery**: Verified `hello`, `agent` (link-local STS Bedrock), `n8n` (schema-per-tenant), and `dify` (dedicated DB, `pgvector`, Redis sidecar).
-* [x] **Teardown Automation**: Automated `make clean-test-tenants` (purging 85 test resources cleanly).
-* [x] **Adapter Contribution Guide**: Standardized specification in `CONTRIBUTING.md` and `terraform/tenant_adapter_template.tf.example`.
-* [ ] **Public Launch Package**: Overhaul `readme.md` and build the `openclaw` adapter.
-* [ ] **Core Product Moats**: Implement TryBase MCP Server, Live CloudWatch Log Streaming, and `SO_PEERCRED` Zero-Env Secret Daemon.
+This document tracks development progress, our architectural reality check, and the phased roadmap for implementing TryBase's core engineering moats.
 
 ---
 
-> [!NOTE]
-> For active engineering priorities and milestone tracking, refer to [`ROADMAP.md`](ROADMAP.md).
+## 🔍 Ground Truth & Reality Check: Where Are We Today?
+
+| Capability | Documented Vision | Code Status | Notes |
+| :--- | :--- | :--- | :--- |
+| **Multi-Tenant Fargate Fleet** | Isolated Firecracker MicroVMs per tenant | ✅ **100% Live in Code** | VPC, ALB with Wildcard SSL, Subnets, Security Groups |
+| **RDS Schema Isolation** | Dedicated schema/database per tenant | ✅ **100% Live in Code** | `create-schema` Lambda creates schemas & scoped credentials |
+| **Step Functions Orchestrator** | Asynchronous durable provisioning pipeline | ✅ **100% Live in Code** | Full validation, target groups, listener rules, health checks |
+| **Workload Battery (4 Archetypes)** | Hello, Agent (Bedrock), n8n, Dify | ✅ **100% Live in Code** | Passing end-to-end tests in `<90s` |
+| **Teardown Automation** | Safe cleanup of ephemeral resources | ✅ **100% Live in Code** | `make clean-test-tenants` purges all orphaned resources |
+| **Interactive In-App Documentation** | Laravel-style 35-chapter reader with Mermaid | ✅ **100% Live in Code** | Live in `/docs`, SVG zoom, pan, fullscreen lightbox |
+| **The Anti-Leak Standard (UDS)** | Zero `.env`, `/var/run/trybase/secrets.sock` + `SO_PEERCRED` | 📋 *Documented / Vision* | Containers currently receive standard ECS environment variables |
+| **TryBase MCP Server** | Model Context Protocol for Claude / Cursor / Agents | 📋 *Documented / Vision* | Tool specs written; code implementation pending |
+| **Live CloudWatch Log Streaming** | Real-time container stdout/stderr in UI | 📋 *Documented / Vision* | Dashboard shows orchestrator events; CloudWatch tailing pending |
+| **Tenant-Scoped S3 Backups & DR** | Automated `pg_dump` Lambda with 1-click restore | 📋 *Documented / Vision* | Documented in Pillar 3; Lambda implementation pending |
+| **FinOps Scale-to-Zero Scheduling** | Auto-scale to 0 on idle + rehydration on traffic | 📋 *Documented / Vision* | Documented in Pillar 4; Alarm & rehydration wiring pending |
+
+---
+
+## Phase 1: MVP & Multi-Tenant Infrastructure — [COMPLETED]
+- [x] Initial design & scoping (Shared VPC, Fargate per tenant).
+- [x] Terraform foundation with remote state in S3.
+- [x] Shared infrastructure: VPC, ALB, Wildcard ACM SSL, and RDS PostgreSQL online.
+- [x] Tenant ECS Service, IAM roles, and target group wiring.
+
+## Phase 2: Automation & Orchestration Pipeline — [COMPLETED]
+- [x] AWS Step Functions orchestrator state machine.
+- [x] `create-schema` Lambda (arm64 Graviton) with scoped PostgreSQL user provisioning.
+- [x] CodeBuild pipeline for dynamic infrastructure execution.
+- [x] End-to-end verification of `hello`, `n8n`, `agent`, and `dify` workloads.
+
+## Phase 3: Control Plane & Dynamic Documentation — [COMPLETED]
+- [x] Supabase authentication & workspace tracking.
+- [x] Dashboard console with provisioning status and real-time state listeners.
+- [x] Complete 35-chapter documentation suite in `docs/`.
+- [x] Interactive in-app documentation reader (`web/src/views/Docs.jsx`) with live SVG Mermaid diagrams, pan/zoom canvas, and fullscreen lightbox modal.
+
+---
+
+## Phase 4: The 5 Deep-Tech Value Pillars (The "Fun Stuff") — [ACTIVE]
+
+**Goal:** Turn our architectural whitepaper into concrete, defensible engineering moats.
+
+```
+                              THE 5 VALUE PILLARS SPRINT MAP
+                                            │
+         ┌──────────────────┬───────────────┼───────────────┬──────────────────┐
+         ▼                  ▼               ▼               ▼                  ▼
+    SPRINT 4.1         SPRINT 4.2      SPRINT 4.3      SPRINT 4.4         SPRINT 4.5
+   TryBase MCP       The Anti-Leak     Live CloudWatch  Tenant S3 DR       Scale-to-Zero
+     Server              Daemon         Log Streaming   (pg_dump Lambda)    (FinOps Idle)
+(Autonomous SRE)     (SO_PEERCRED)     (Web Console)    (1-Click Restore)  (Sleep / Wake)
+```
+
+### Sprint 4.1: The TryBase MCP Server (`trybase-mcp`)
+*Implement the official Anthropic Model Context Protocol (MCP) server so AI assistants (Claude Desktop, Cursor, OpenClaw, and autonomous agents) can inspect, deploy, scale, and heal TryBase workloads.*
+- [ ] Initialize `packages/trybase-mcp` using the official `@modelcontextprotocol/sdk`.
+- [ ] Implement core tools:
+  - `trybase_list_workloads`: Inspect running tenants, status, and health.
+  - `trybase_deploy_workload`: Dispatch asynchronous Step Functions provisioning.
+  - `trybase_get_container_logs`: Fetch recent container stdout/stderr.
+  - `trybase_scale_workload`: Dynamically scale CPU & memory limits.
+  - `trybase_create_backup`: Trigger point-in-time PostgreSQL snapshot.
+  - `trybase_restart_workload`: Restart unhealthy container services.
+- [ ] Author autonomous self-healing prompt scenario (detect OOM $\rightarrow$ scale RAM $\rightarrow$ backup $\rightarrow$ restore health).
+
+### Sprint 4.2: The Anti-Leak Standard (`trybase-agent` & UDS `SO_PEERCRED`)
+*Eliminate plaintext `.env` files and environment variable dumps across the platform.*
+- [ ] Build lightweight Go/Rust daemon (`trybase-agent`) listening on `/var/run/trybase/secrets.sock`.
+- [ ] Implement Linux `SO_PEERCRED` caller UID/PID verification (`getsockopt(SOL_SOCKET, SO_PEERCRED)`).
+- [ ] Implement binary validation via `/proc/<pid>/exe` (blocking reverse shells, `curl`, `/bin/bash`).
+- [ ] Implement IMDSv2-style token handshakes (`PUT` request with TTL).
+- [ ] Build zero-code injected wrapper (`trybase-entrypoint`) that scrubs `process.env` and injects secrets into application memory at startup.
+
+### Sprint 4.3: Live Observability & CloudWatch Log Streaming
+*Connect the web dashboard directly to live container logs with zero latency.*
+- [ ] Build backend API endpoint / Supabase Edge Function to stream AWS CloudWatch Logs (`/aws/ecs/<tenant>`).
+- [ ] Wire the dark-mode terminal in `web/src/views/Dashboard.jsx` to live container stdout/stderr.
+- [ ] Add log pause/resume, regex search, and severity filters (INFO, WARN, ERROR).
+- [ ] Add performance gauges: p50/p95 latency and HTTP 2xx/4xx/5xx status distribution.
+
+### Sprint 4.4: Tenant-Scoped Automated Backups & Disaster Recovery
+*Granular, per-tenant disaster recovery without whole-database dumps.*
+- [ ] Build `backup-tenant` Lambda running `pg_dump` targeting strictly `schema_<tenant_id>` or `db_<tenant_id>`.
+- [ ] Compress (`.sql.gz`) and encrypt with tenant-specific KMS keys.
+- [ ] Upload to `s3://trybase-backups-<account>/<tenant_id>/` with 30-day lifecycle rules.
+- [ ] Add 1-click database export & restore button to Dashboard and MCP server.
+
+### Sprint 4.5: FinOps Intelligent Scheduling (Scale-to-Zero)
+*Cut customer cloud bills by 65% by terminating idle compute.*
+- [ ] Create CloudWatch Metric Alarm for `RequestCountPerTarget == 0` over 30 minutes.
+- [ ] Wire Step Function to scale ECS service to `desired_count = 0`.
+- [ ] Build ALB Rehydration Lambda: on incoming HTTP traffic, intercept request, scale `desired_count = 1`, wait for container healthy, and forward traffic.
+
+---
+
+## Phase 5: Ecosystem Expansion & Public Launch — [NEXT]
+
+- [ ] **OpenClaw Workload Adapter**: Official `tenant_openclaw.tf` adapter for Telegram/Slack autonomous agents.
+- [ ] **Root `README.md` Overhaul**: Position TryBase as the open-source infrastructure engine for autonomous AI agents.
+- [ ] **Visual Terminal Demo**: Record high-res terminal walkthrough (`make test-provision`).
+- [ ] **Community Release**: Product Hunt, Hacker News, r/selfhosted, and GitHub launch.

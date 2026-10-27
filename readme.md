@@ -1,10 +1,13 @@
 <div align="center">
 
-# 🚀 TryBase
+<p align="center">
+  <img src="docs/assets/banner.png" alt="TryBase Cloud Engine" width="650" />
+</p>
 
-### The Open-Source Platform to Build, Run, and Scale Multi-Tenant AI Agents on Battle-Tested Hyperscalers
+### The Open-Source Cloud Infrastructure Engine for Autonomous AI Agents & Automations
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Documentation](https://img.shields.io/badge/Docs-Laravel%20Style-red.svg)](docs/README.md)
 [![GitHub](https://img.shields.io/badge/GitHub-Open_Source-181717?logo=github)](https://github.com/rgayan12/trybase)
 [![Hyperscaler](https://img.shields.io/badge/Hyperscaler-AWS_Fargate_%26_Bedrock-FF9900?logo=amazon-aws)](https://aws.amazon.com)
 [![Vector Memory](https://img.shields.io/badge/Vector_Memory-pgvector_RDS-336791.svg?logo=postgresql)](#-schema--database-isolation-with-pgvector)
@@ -12,9 +15,9 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **Deploy, isolate, and scale any containerized AI agent, autonomous worker, or workflow engine as a production-grade multi-tenant fleet on AWS.**  
-Built for AI agencies, developers, and platform teams who need strict client data isolation, dedicated microVM compute, per-tenant IAM security, dynamic wildcard SSL subdomains, and native vector memory (`pgvector`) for ~$4–$5/tenant/month without paying $50+/seat SaaS fees or maintaining Kubernetes.
+Built for AI agencies, developers, and platform teams who need strict client data isolation, dedicated microVM compute, per-tenant IAM security, dynamic wildcard SSL subdomains, and native vector memory (`pgvector`) without paying $50+/seat SaaS fees or maintaining Kubernetes.
 
-[Why TryBase?](#-why-trybase) • [Architecture](#-architecture) • [Run Any Container](#-run-any-containerized-ai-agent-or-workload) • [Cost Breakdown](#-cost-breakdown) • [Why Not Kubernetes?](#-why-trybase-instead-of-kubernetes-eks) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
+[📚 Read Full Documentation](docs/README.md) • [Why TryBase?](#-why-trybase) • [Architecture](#-architecture) • [Run Any Container](#-run-any-containerized-ai-agent-or-workload) • [Cost Breakdown](#-cost-breakdown) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
 
 ---
 

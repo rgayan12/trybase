@@ -34,7 +34,9 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (inline) {
+  const isInline = inline || (!match && !codeText.includes('\n'));
+
+  if (isInline) {
     return (
       <code style={{
         backgroundColor: '#f1f5f9',
@@ -109,20 +111,37 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
 const Blockquote = ({ children }) => {
   // Extract text content to detect GitHub Alert syntax: > [!NOTE], > [!TIP], > [!WARNING], > [!IMPORTANT]
   const childrenArray = React.Children.toArray(children);
+  const pElement = childrenArray.find(c => c && typeof c === 'object' && c.props && c.props.children);
+
   let alertType = null;
   let cleanChildren = children;
 
-  try {
-    const firstP = childrenArray[0];
-    if (firstP && firstP.props && firstP.props.children) {
-      const text = String(firstP.props.children);
-      if (text.includes('[!NOTE]')) alertType = 'note';
-      else if (text.includes('[!TIP]')) alertType = 'tip';
-      else if (text.includes('[!WARNING]')) alertType = 'warning';
-      else if (text.includes('[!IMPORTANT]')) alertType = 'important';
-      else if (text.includes('[!CAUTION]')) alertType = 'caution';
+  if (pElement) {
+    const rawText = Array.isArray(pElement.props.children)
+      ? pElement.props.children.map(x => typeof x === 'string' ? x : '').join('')
+      : String(pElement.props.children || '');
+
+    if (rawText.includes('[!NOTE]')) alertType = 'note';
+    else if (rawText.includes('[!TIP]')) alertType = 'tip';
+    else if (rawText.includes('[!WARNING]')) alertType = 'warning';
+    else if (rawText.includes('[!IMPORTANT]')) alertType = 'important';
+    else if (rawText.includes('[!CAUTION]')) alertType = 'caution';
+
+    if (alertType) {
+      cleanChildren = childrenArray.map(c => {
+        if (c === pElement) {
+          const newChildren = React.Children.map(pElement.props.children, child => {
+            if (typeof child === 'string') {
+              return child.replace(/\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*/i, '');
+            }
+            return child;
+          });
+          return React.cloneElement(pElement, { key: pElement.key }, newChildren);
+        }
+        return c;
+      });
     }
-  } catch (e) { }
+  }
 
   if (alertType) {
     const styles = {

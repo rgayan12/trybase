@@ -9,16 +9,16 @@
 
 ```mermaid
 graph TD
-    Start([POST /provision]) --> Validate[Validate Parameters & Check Slug Clashes]
-    Validate --> DBInit[Run Schema Bootstrap Lambda: create-schema]
-    DBInit --> IAMRole[Generate Dedicated IAM Task Role]
-    IAMRole --> ECSDef[Register Fargate Task Definition]
-    ECSDef --> ALBTarget[Create ALB Target Group & Health Check]
-    ALBTarget --> ALBRule[Bind ALB Listener Rule with Host Header]
-    ALBRule --> ECSService[Launch ECS Fargate Service]
-    ECSService --> HealthWait{Poll ALB Target Health}
-    HealthWait -->|Target Healthy (HTTP 200)| Complete[Update Supabase Workspace Status to active]
-    HealthWait -->|Timeout > 180s| Rollback[Trigger Rollback State & Alert]
+    Start(["POST /provision"]) --> Validate["Validate Parameters & Check Slug Clashes"]
+    Validate --> DBInit["Run Schema Bootstrap Lambda: create-schema"]
+    DBInit --> IAMRole["Generate Dedicated IAM Task Role"]
+    IAMRole --> ECSDef["Register Fargate Task Definition"]
+    ECSDef --> ALBTarget["Create ALB Target Group & Health Check"]
+    ALBTarget --> ALBRule["Bind ALB Listener Rule with Host Header"]
+    ALBRule --> ECSService["Launch ECS Fargate Service"]
+    ECSService --> HealthWait{"Poll ALB Target Health"}
+    HealthWait -->|"Target Healthy (HTTP 200)"| Complete["Update Supabase Workspace Status to active"]
+    HealthWait -->|"Timeout > 180s"| Rollback["Trigger Rollback State & Alert"]
 ```
 
 ---

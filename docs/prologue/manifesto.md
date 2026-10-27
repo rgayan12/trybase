@@ -1,7 +1,7 @@
 # Architecture Manifesto
 
 <p align="center">
-  <img src="../assets/logo.png" alt="TryBase Logo" width="80" />
+  <img src="https://trybase.io/logo.png" alt="TryBase Logo" width="80" />
 </p>
 
 > [!NOTE]

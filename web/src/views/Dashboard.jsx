@@ -499,7 +499,7 @@ const Dashboard = () => {
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src="logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
+          <img src="https://trybase.io/logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
           <div>
             <span style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.02em', color: '#0f172a', display: 'block', lineHeight: 1.1 }}>
               TryBase

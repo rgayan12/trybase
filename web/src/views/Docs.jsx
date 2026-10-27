@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Search, BookOpen, Star, ChevronRight, ChevronLeft, ExternalLink, 
-  Copy, Check, Menu, X, ArrowUpRight, Info, AlertTriangle, 
+import {
+  Search, BookOpen, Star, ChevronRight, ChevronLeft, ExternalLink,
+  Copy, Check, Menu, X, ArrowUpRight, Info, AlertTriangle,
   Sparkles, AlertCircle, ArrowLeft, Terminal
 } from 'lucide-react';
 
@@ -15,6 +15,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { DOCS_NAV, ALL_DOC_ITEMS, getAdjacentDocs } from '../lib/docsNavigation';
 import { getDocContent } from '../lib/docsLoader';
+import Mermaid from '../components/Mermaid';
 
 // Custom Markdown Code Block with Copy Button
 const CodeBlock = ({ node, inline, className, children, ...props }) => {
@@ -22,6 +23,10 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
   const codeText = String(children).replace(/\n$/, '');
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
+
+  if (language === 'mermaid') {
+    return <Mermaid chart={codeText} />;
+  }
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(codeText);
@@ -117,7 +122,7 @@ const Blockquote = ({ children }) => {
       else if (text.includes('[!IMPORTANT]')) alertType = 'important';
       else if (text.includes('[!CAUTION]')) alertType = 'caution';
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (alertType) {
     const styles = {
@@ -210,7 +215,7 @@ export default function Docs() {
     const q = searchQuery.toLowerCase();
     return DOCS_NAV.map(group => ({
       ...group,
-      items: group.items.filter(item => 
+      items: group.items.filter(item =>
         item.title.toLowerCase().includes(q) || group.group.toLowerCase().includes(q)
       )
     })).filter(group => group.items.length > 0);
@@ -246,7 +251,7 @@ export default function Docs() {
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -263,7 +268,7 @@ export default function Docs() {
           </button>
 
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-            <img src="/logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
+            <img src="https://trybase.io/logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
             <span style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: '#0f172a' }}>
               TryBase
             </span>
@@ -365,7 +370,7 @@ export default function Docs() {
         margin: '0 auto',
         width: '100%'
       }}>
-        
+
         {/* Left Sidebar Navigation (Laravel Style) */}
         <aside style={{
           width: '280px',
@@ -448,7 +453,7 @@ export default function Docs() {
           overflowY: 'auto',
           lineHeight: 1.7
         }}>
-          
+
           {/* Breadcrumbs & GitHub Link */}
           <div style={{
             display: 'flex',

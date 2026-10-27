@@ -11,14 +11,13 @@ This document tracks development progress, our architectural reality check, and 
 | **Multi-Tenant Fargate Fleet** | Isolated Firecracker MicroVMs per tenant | ✅ **100% Live in Code** | VPC, ALB with Wildcard SSL, Subnets, Security Groups |
 | **RDS Schema Isolation** | Dedicated schema/database per tenant | ✅ **100% Live in Code** | `create-schema` Lambda creates schemas & scoped credentials |
 | **Step Functions Orchestrator** | Asynchronous durable provisioning pipeline | ✅ **100% Live in Code** | Full validation, target groups, listener rules, health checks |
-| **Workload Battery (4 Archetypes)** | Hello, Agent (Bedrock), n8n, Dify | ✅ **100% Live in Code** | Passing end-to-end tests in `<90s` |
 | **Teardown Automation** | Safe cleanup of ephemeral resources | ✅ **100% Live in Code** | `make clean-test-tenants` purges all orphaned resources |
 | **Interactive In-App Documentation** | Laravel-style 35-chapter reader with Mermaid | ✅ **100% Live in Code** | Live in `/docs`, SVG zoom, pan, fullscreen lightbox |
-| **The Anti-Leak Standard (UDS)** | Zero `.env`, `/var/run/trybase/secrets.sock` + `SO_PEERCRED` | 📋 *Documented / Vision* | Containers currently receive standard ECS environment variables |
-| **TryBase MCP Server** | Model Context Protocol for Claude / Cursor / Agents | 📋 *Documented / Vision* | Tool specs written; code implementation pending |
+| **The Anti-Leak Standard (UDS)** | Zero `.env`, `/var/run/trybase/secrets.sock` + `SO_PEERCRED` | ✅ **100% Live in Code** | Rust daemon (`trybase-daemon`), `trybase-entrypoint`, IMDSv2, RDS IAM, 9/9 tests passing |
 | **Live CloudWatch Log Streaming** | Real-time container stdout/stderr in UI | 📋 *Documented / Vision* | Dashboard shows orchestrator events; CloudWatch tailing pending |
 | **Tenant-Scoped S3 Backups & DR** | Automated `pg_dump` Lambda with 1-click restore | 📋 *Documented / Vision* | Documented in Pillar 3; Lambda implementation pending |
 | **FinOps Scale-to-Zero Scheduling** | Auto-scale to 0 on idle + rehydration on traffic | 📋 *Documented / Vision* | Documented in Pillar 4; Alarm & rehydration wiring pending |
+| **Fleet Migration & GitOps Orchestrator** | `git push` runs parallel migrations across tenant schemas | 📋 *Documented / Vision* | Documented in Sprint 4.6; Step Functions Distributed Map |
 
 ---
 
@@ -42,22 +41,22 @@ This document tracks development progress, our architectural reality check, and 
 
 ---
 
-## Phase 4: The 5 Deep-Tech Value Pillars (The "Fun Stuff") — [ACTIVE]
+## Phase 4: The Deep-Tech Value Pillars (The "Fun Stuff") — [ACTIVE]
 
 **Goal:** Turn our architectural whitepaper into concrete, defensible engineering moats.
 
 ```
-                              THE 5 VALUE PILLARS SPRINT MAP
-                                            │
-         ┌──────────────────┬───────────────┼───────────────┬──────────────────┐
-         ▼                  ▼               ▼               ▼                  ▼
-    SPRINT 4.1         SPRINT 4.2      SPRINT 4.3      SPRINT 4.4         SPRINT 4.5
-   TryBase MCP       The Anti-Leak     Live CloudWatch  Tenant S3 DR       Scale-to-Zero
-     Server              Daemon         Log Streaming   (pg_dump Lambda)    (FinOps Idle)
-(Autonomous SRE)     (SO_PEERCRED)     (Web Console)    (1-Click Restore)  (Sleep / Wake)
+                               THE VALUE PILLARS SPRINT MAP
+                                             │
+         ┌──────────────┬──────────────┬─────┴────────┬──────────────┬──────────────┐
+         ▼              ▼              ▼              ▼              ▼              ▼
+    SPRINT 4.1     SPRINT 4.2     SPRINT 4.3     SPRINT 4.4     SPRINT 4.5     SPRINT 4.6
+   TryBase MCP   The Anti-Leak   Live Log Stream Tenant S3 DR   Scale-to-Zero   Fleet GitOps
+      Server         Daemon      (Web Console)  (pg_dump S3)    (Sleep/Wake)    & Migrations
+   [NEXT FOCUS]   [COMPLETED]       (Logs)       (1-Click)        (FinOps)      (Single Push)
 ```
 
-### Sprint 4.1: The TryBase MCP Server (`trybase-mcp`)
+### Sprint 4.1: The TryBase MCP Server (`trybase-mcp`) — [NEXT FOCUS]
 *Implement the official Anthropic Model Context Protocol (MCP) server so AI assistants (Claude Desktop, Cursor, OpenClaw, and autonomous agents) can inspect, deploy, scale, and heal TryBase workloads.*
 - [ ] Initialize `packages/trybase-mcp` using the official `@modelcontextprotocol/sdk`.
 - [ ] Implement core tools:
@@ -67,15 +66,19 @@ This document tracks development progress, our architectural reality check, and 
   - `trybase_scale_workload`: Dynamically scale CPU & memory limits.
   - `trybase_create_backup`: Trigger point-in-time PostgreSQL snapshot.
   - `trybase_restart_workload`: Restart unhealthy container services.
+  - `trybase_set_secrets`: Securely push encrypted secrets to a tenant's vault.
 - [ ] Author autonomous self-healing prompt scenario (detect OOM $\rightarrow$ scale RAM $\rightarrow$ backup $\rightarrow$ restore health).
 
-### Sprint 4.2: The Anti-Leak Standard (`trybase-agent` & UDS `SO_PEERCRED`)
+### Sprint 4.2: The Anti-Leak Standard (`trybase-daemon` & UDS `SO_PEERCRED`) — [COMPLETED]
 *Eliminate plaintext `.env` files and environment variable dumps across the platform.*
-- [ ] Build lightweight Go/Rust daemon (`trybase-agent`) listening on `/var/run/trybase/secrets.sock`.
-- [ ] Implement Linux `SO_PEERCRED` caller UID/PID verification (`getsockopt(SOL_SOCKET, SO_PEERCRED)`).
-- [ ] Implement binary validation via `/proc/<pid>/exe` (blocking reverse shells, `curl`, `/bin/bash`).
-- [ ] Implement IMDSv2-style token handshakes (`PUT` request with TTL).
-- [ ] Build zero-code injected wrapper (`trybase-entrypoint`) that scrubs `process.env` and injects secrets into application memory at startup.
+- [x] Build lightweight Rust daemon (`trybase-daemon`) listening on `/var/run/trybase/secrets.sock` with mode `0666`.
+- [x] Implement Linux `SO_PEERCRED` caller UID/PID verification (`getsockopt(SOL_SOCKET, SO_PEERCRED)`).
+- [x] Implement binary validation via `/proc/<pid>/exe` (blocking reverse shells, `curl`, `/bin/bash`).
+- [x] Implement IMDSv2-style token handshakes (`PUT /latest/api/token` with TTL and SSRF defense).
+- [x] Implement Passwordless PostgreSQL via 15-minute ephemeral RDS IAM database tokens.
+- [x] Build zero-code injected wrapper (`trybase-entrypoint`) that scrubs `process.env` and injects secrets into application memory at startup.
+- [x] Build client SDKs: Laravel (`TryBaseServiceProvider.php`), Python/Django (`trybase_secrets.py`), Go (`client.go`), and TypeScript/Node.js (`client.ts`).
+- [x] Automated test battery passing 9/9 integration tests (`tests/test_anti_leak_daemon.sh`).
 
 ### Sprint 4.3: Live Observability & CloudWatch Log Streaming
 *Connect the web dashboard directly to live container logs with zero latency.*
@@ -96,6 +99,15 @@ This document tracks development progress, our architectural reality check, and 
 - [ ] Create CloudWatch Metric Alarm for `RequestCountPerTarget == 0` over 30 minutes.
 - [ ] Wire Step Function to scale ECS service to `desired_count = 0`.
 - [ ] Build ALB Rehydration Lambda: on incoming HTTP traffic, intercept request, scale `desired_count = 1`, wait for container healthy, and forward traffic.
+
+### Sprint 4.6: Fleet Migration & GitOps Orchestrator (Single-Tenant Code, Multi-Tenant Rollout)
+*A single `git push` runs schema migrations and deploys zero-downtime rolling updates across the entire tenant fleet.*
+- [ ] Build `FleetRolloutStateMachine` using AWS Step Functions **Distributed Map** (configurable concurrency, e.g. 20 tenants in parallel).
+- [ ] Build Schema Migration Runner: one-off ephemeral container task with scoped `search_path = schema_<tenant_id>` running `artisan migrate` or `manage.py migrate`.
+- [ ] Wire Canary Deployment Rings:
+  - **Ring 0**: Internal dogfood tenant.
+  - **Ring 1**: 5% of customer fleet.
+- [ ] Integrate with TryBase Web Console for real-time fleet rollout matrix visualization.
 
 ---
 

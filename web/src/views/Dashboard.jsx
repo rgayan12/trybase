@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Server, Settings, LogOut, Loader2, Zap, CheckCircle2, 
-  Activity, Database, Bot, Sparkles, Cpu, 
+import {
+  Server, Settings, LogOut, Loader2, Zap, CheckCircle2,
+  Activity, Database, Bot, Sparkles, Cpu,
   ShieldCheck, Terminal, ChevronDown, ChevronUp, Copy, Check, ExternalLink, Lock,
   Plus, BookOpen, AlertCircle
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import ProvisioningTerminal from '../components/ProvisioningTerminal';
 import ProvisioningGame from '../components/ProvisioningGame';
@@ -306,9 +306,9 @@ const Dashboard = () => {
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 Select Engine
               </label>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                
+
                 {/* Generic AI Container */}
                 <div
                   onClick={() => setWorkloadType('agent')}
@@ -419,8 +419,8 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <button 
-                onClick={() => setSlugInput(generateSlug())} 
+              <button
+                onClick={() => setSlugInput(generateSlug())}
                 style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.82rem', padding: 0, fontWeight: 500 }}
               >
                 Shuffle random name
@@ -446,9 +446,9 @@ const Dashboard = () => {
             )}
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
-                disabled={isProvisioning} 
+              <button
+                onClick={() => setIsModalOpen(false)}
+                disabled={isProvisioning}
                 style={{
                   padding: '0.65rem 1.15rem',
                   backgroundColor: '#ffffff',
@@ -462,9 +462,9 @@ const Dashboard = () => {
               >
                 Cancel
               </button>
-              <button 
-                onClick={executeProvisioning} 
-                disabled={isProvisioning} 
+              <button
+                onClick={executeProvisioning}
+                disabled={isProvisioning}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -499,7 +499,7 @@ const Dashboard = () => {
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src="/logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
+          <img src="../assets/logo.png" alt="TryBase Logo" style={{ height: '28px', width: 'auto' }} />
           <div>
             <span style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.02em', color: '#0f172a', display: 'block', lineHeight: 1.1 }}>
               TryBase
@@ -534,10 +534,8 @@ const Dashboard = () => {
             <span>Workspaces</span>
           </button>
 
-          <a
-            href="https://github.com/rgayan12/trybase/tree/main/docs"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            to="/docs"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -562,7 +560,7 @@ const Dashboard = () => {
             <BookOpen size={17} />
             <span>Documentation</span>
             <ExternalLink size={12} style={{ marginLeft: 'auto', opacity: 0.6 }} />
-          </a>
+          </Link>
 
           <button
             onClick={() => setActiveTab('settings')}
@@ -593,8 +591,8 @@ const Dashboard = () => {
             <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Logged in as</span>
             <strong>{user?.email}</strong>
           </div>
-          <button 
-            onClick={handleSignOut} 
+          <button
+            onClick={handleSignOut}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -616,7 +614,7 @@ const Dashboard = () => {
 
       {/* Main Content Area */}
       <main style={{ flexGrow: 1, padding: '2.5rem 3.5rem', maxWidth: '1400px', overflowY: 'auto' }}>
-        
+
         {/* Top Header */}
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
           <div>
@@ -628,7 +626,7 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <button 
+          <button
             onClick={() => handleOpenDeployModal()}
             style={{
               display: 'inline-flex',
@@ -656,7 +654,7 @@ const Dashboard = () => {
           <div>
             {/* Hyperscaler Control Plane Service-Level Indicators (SLIs) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-              
+
               {/* SLI 1: Zero-Trust MicroVM Fleet */}
               <div style={{
                 backgroundColor: '#ffffff',
@@ -800,8 +798,8 @@ const Dashboard = () => {
                   <p style={{ color: '#64748b', maxWidth: '420px', margin: '0 auto 1.5rem auto', fontSize: '0.9rem', lineHeight: 1.5 }}>
                     Launch your first autonomous AI agent container, Dify studio, or n8n workflow engine on your private AWS Fargate fleet.
                   </p>
-                  <button 
-                    onClick={() => handleOpenDeployModal()} 
+                  <button
+                    onClick={() => handleOpenDeployModal()}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -931,10 +929,10 @@ const Dashboard = () => {
                               Reset Deployment
                             </button>
                           )}
-                          
+
                           {ws.status === 'unprovisioned' ? (
-                            <button 
-                              onClick={() => handleOpenDeployModal(ws.id)} 
+                            <button
+                              onClick={() => handleOpenDeployModal(ws.id)}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -1027,7 +1025,7 @@ const Dashboard = () => {
 
                           {/* 3-Column Diagnostic Specs Grid */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-                            
+
                             {/* Column 1: Zero-Trust IAM & Bedrock */}
                             <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#7c3aed', fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.65rem' }}>
@@ -1169,7 +1167,7 @@ const Dashboard = () => {
                 Manage your console profile and password credentials.
               </p>
             </div>
-            
+
             <div style={{ padding: '2rem', maxWidth: '520px' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>
                 Change Password
@@ -1206,8 +1204,8 @@ const Dashboard = () => {
                     }}
                   />
                 </div>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   style={{
                     padding: '0.65rem 1.25rem',
                     backgroundColor: '#10b981',

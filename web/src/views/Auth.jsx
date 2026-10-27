@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, ArrowRight, BookOpen } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const Auth = () => {
@@ -295,10 +295,8 @@ const Auth = () => {
         fontSize: '0.85rem',
         color: '#64748b'
       }}>
-        <a 
-          href="https://github.com/rgayan12/trybase/tree/main/docs" 
-          target="_blank" 
-          rel="noreferrer"
+        <Link 
+          to="/docs" 
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -309,8 +307,8 @@ const Auth = () => {
           onMouseOver={(e) => (e.currentTarget.style.color = '#0f172a')}
           onMouseOut={(e) => (e.currentTarget.style.color = '#64748b')}
         >
-          <BookOpen size={15} /> Documentation on GitHub
-        </a>
+          <BookOpen size={15} /> Documentation
+        </Link>
         <span>•</span>
         <span>Apache 2.0 Open Source</span>
       </div>

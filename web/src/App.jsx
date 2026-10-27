@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { supabase } from './lib/supabaseClient';
 import Auth from './views/Auth';
 import Dashboard from './views/Dashboard';
+import Docs from './views/Docs';
 import { Loader2 } from 'lucide-react';
 
 function App() {
@@ -45,10 +46,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Root Route: Auth takes user straight to Dashboard */}
+        {/* Core Auth & Dashboard Flow */}
         <Route path="/" element={session ? <Dashboard /> : <Auth />} />
         <Route path="/auth" element={session ? <Navigate to="/" replace /> : <Auth />} />
         <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/" replace />} />
+
+        {/* Embedded Laravel-Style Documentation (Markdown Loaded Live from /docs) */}
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/docs/*" element={<Docs />} />
+
+        {/* Fallback to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/banner.png" alt="TryBase Cloud Engine" width="600" />
+  <img src="assets/banner.png" alt="TryBase Cloud Engine" width="600" />
 </p>
 
 <p align="center">

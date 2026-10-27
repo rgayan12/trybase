@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { Loader2, ArrowRight, BookOpen } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { redirectToCheckout } from '../lib/billing';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -13,14 +12,14 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    const redirectPath = searchParams.get('redirect');
+    setSuccessMessage(null);
 
     try {
       if (isLogin) {
@@ -29,50 +28,26 @@ const Auth = () => {
           password,
         });
         if (loginError) throw loginError;
-        
-        // Track Amplitude Event
-        window.amplitude?.track('Sign In');
-        
-        // Handle post-login redirection
-        if (redirectPath) {
-          if (redirectPath.startsWith('stripe_')) {
-            const planId = redirectPath.replace('stripe_', '');
-            await redirectToCheckout(planId);
-          } else {
-            navigate(redirectPath);
-          }
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/');
       } else {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: window.location.origin,
-              data: {
-                full_name: fullName,
-              }
-            },
-          });
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: {
+              full_name: fullName,
+            }
+          },
+        });
         if (signUpError) throw signUpError;
 
-        // Track Amplitude Event
-        window.amplitude?.track('Sign Up', {
-          full_name: fullName,
-          email: email
-        });
-        
-        // Since email confirmation is disabled, we redirect immediately
-        if (redirectPath) {
-          if (redirectPath.startsWith('stripe_')) {
-            const planId = redirectPath.replace('stripe_', '');
-            await redirectToCheckout(planId);
-          } else {
-            navigate(redirectPath);
-          }
+        // If email confirmation is required by Supabase project settings
+        if (data?.user && !data.session) {
+          setSuccessMessage('Account created! Please check your email to confirm your account, then sign in.');
+          setIsLogin(true);
         } else {
-          navigate('/dashboard');
+          navigate('/');
         }
       }
     } catch (err) {
@@ -83,89 +58,263 @@ const Auth = () => {
   };
 
   return (
-    <div className="auth-container">
-      <Link to="/" className="btn btn-secondary" style={{ marginBottom: '2rem', border: 'none', background: 'transparent' }}>
-        <ArrowLeft size={18} /> Back to Home
-      </Link>
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#f8fafc',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '2rem 1rem',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
       
-      <div className="glass-card">
-        <h2 style={{ marginBottom: '0.5rem' }}>{isLogin ? 'Welcome Back' : 'Get Started'}</h2>
-        <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-          {isLogin ? 'Log in to manage your workspaces' : 'Create your account to start your 7-day trial'}
+      {/* Brand Header */}
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <img 
+          src="/logo.png" 
+          alt="TryBase Logo" 
+          style={{ height: '44px', width: 'auto', marginBottom: '1rem' }} 
+        />
+        <h1 style={{
+          fontSize: '1.75rem',
+          fontWeight: 800,
+          color: '#0f172a',
+          letterSpacing: '-0.03em',
+          margin: '0 0 0.35rem 0'
+        }}>
+          TryBase Console
+        </h1>
+        <p style={{
+          fontSize: '0.92rem',
+          color: '#64748b',
+          margin: 0
+        }}>
+          {isLogin 
+            ? 'Sign in to manage your autonomous AI agent fleet' 
+            : 'Create an administrator account for your private cluster'}
         </p>
+      </div>
 
+      {/* Auth Card */}
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
+        padding: '2rem'
+      }}>
+        
         {error && (
-          <div style={{ padding: '0.75rem', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: '8px', color: '#f43f5e', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          <div style={{
+            padding: '0.75rem 1rem',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fee2e2',
+            borderRadius: '8px',
+            color: '#dc2626',
+            marginBottom: '1.5rem',
+            fontSize: '0.88rem'
+          }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleAuth}>
+        {successMessage && (
+          <div style={{
+            padding: '0.75rem 1rem',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #dcfce7',
+            borderRadius: '8px',
+            color: '#15803d',
+            marginBottom: '1.5rem',
+            fontSize: '0.88rem'
+          }}>
+            {successMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {!isLogin && (
-            <div className="form-group">
-              <label>Full Name</label>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#334155',
+                marginBottom: '0.4rem'
+              }}>
+                Full Name
+              </label>
               <input 
                 type="text" 
-                className="form-control" 
-                placeholder="John Doe" 
+                placeholder="Jane Doe" 
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.85rem',
+                  fontSize: '0.92rem',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  color: '#0f172a',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
           )}
-          <div className="form-group">
-            <label>Email Address</label>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: '#334155',
+              marginBottom: '0.4rem'
+            }}>
+              Email Address
+            </label>
             <input 
               type="email" 
-              className="form-control" 
-              placeholder="name@company.com" 
+              placeholder="admin@yourdomain.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.65rem 0.85rem',
+                fontSize: '0.92rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                color: '#0f172a',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
-          <div className="form-group">
-            <label>Password</label>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <label style={{
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#334155'
+              }}>
+                Password
+              </label>
+            </div>
             <input 
               type="password" 
-              className="form-control" 
-              placeholder="••••••••" 
+              placeholder="••••••••••••" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              style={{
+                width: '100%',
+                padding: '0.65rem 0.85rem',
+                fontSize: '0.92rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                color: '#0f172a',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
-          
+
           <button 
             type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', justifyContent: 'center', marginTop: '1rem' }}
             disabled={loading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '0.5rem',
+              transition: 'background-color 0.15s ease'
+            }}
+            onMouseOver={(e) => !loading && (e.currentTarget.style.backgroundColor = '#059669')}
+            onMouseOut={(e) => !loading && (e.currentTarget.style.backgroundColor = '#10b981')}
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : (isLogin ? 'Sign In' : 'Create Account')}
+            {!loading && <ArrowRight size={16} />}
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.9rem' }}>
-          <span className="text-secondary">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
-          </span>
+        <div style={{
+          marginTop: '1.75rem',
+          paddingTop: '1.25rem',
+          borderTop: '1px solid #f1f5f9',
+          textAlign: 'center',
+          fontSize: '0.88rem',
+          color: '#64748b'
+        }}>
+          {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
           <button 
-            onClick={() => setIsLogin(!isLogin)}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: 'var(--accent-blue)', 
-              marginLeft: '0.5rem', 
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError(null);
+              setSuccessMessage(null);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#2563eb',
               cursor: 'pointer',
-              fontWeight: 600
+              fontWeight: 600,
+              padding: 0
             }}
           >
-            {isLogin ? 'Sign Up' : 'Sign In'}
+            {isLogin ? 'Create one' : 'Sign in'}
           </button>
         </div>
+
       </div>
+
+      {/* Footer Navigation */}
+      <div style={{
+        marginTop: '2rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1.5rem',
+        fontSize: '0.85rem',
+        color: '#64748b'
+      }}>
+        <a 
+          href="https://github.com/rgayan12/trybase/tree/main/docs" 
+          target="_blank" 
+          rel="noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: '#64748b',
+            textDecoration: 'none'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.color = '#0f172a')}
+          onMouseOut={(e) => (e.currentTarget.style.color = '#64748b')}
+        >
+          <BookOpen size={15} /> Documentation on GitHub
+        </a>
+        <span>•</span>
+        <span>Apache 2.0 Open Source</span>
+      </div>
+
     </div>
   );
 };

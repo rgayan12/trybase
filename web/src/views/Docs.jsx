@@ -13,6 +13,7 @@ const GithubIcon = ({ size = 15 }) => (
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { DOCS_NAV, ALL_DOC_ITEMS, getAdjacentDocs } from '../lib/docsNavigation';
 import { getDocContent } from '../lib/docsLoader';
 import Mermaid from '../components/Mermaid';
@@ -515,6 +516,7 @@ export default function Docs() {
           <article className="prose" style={{ color: '#334155', fontSize: '0.98rem' }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
               components={{
                 code: CodeBlock,
                 blockquote: Blockquote,

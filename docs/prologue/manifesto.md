@@ -1,9 +1,5 @@
 # Architecture Manifesto
 
-<p align="center">
-  <img src="https://trybase.io/logo.png" alt="TryBase Logo" width="80" />
-</p>
-
 > [!NOTE]
 > This manifesto establishes the foundational engineering principles of TryBase. Every architectural decision, code contribution, and workload adapter must uphold these core tenets.
 

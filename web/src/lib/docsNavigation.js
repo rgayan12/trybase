@@ -8,6 +8,7 @@ export const DOCS_NAV = [
     group: 'Prologue',
     items: [
       { id: 'prologue/manifesto', title: 'Architecture Manifesto', path: 'prologue/manifesto.md', icon: BookOpen },
+      { id: 'prologue/virtual-single-tenancy', title: 'Virtual Single-Tenancy', path: 'prologue/virtual-single-tenancy.md', icon: Server },
       { id: 'prologue/anti-leak-standard', title: 'The Anti-Leak Standard', path: 'prologue/anti-leak-standard.md', icon: Shield },
       { id: 'prologue/comparative-analysis', title: 'TryBase vs Traditional PaaS', path: 'prologue/comparative-analysis.md', icon: Layers }
     ]

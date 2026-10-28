@@ -14,6 +14,7 @@ This document tracks development progress, our architectural reality check, and 
 | **Teardown Automation** | Safe cleanup of ephemeral resources | ✅ **100% Live in Code** | `make clean-test-tenants` purges all orphaned resources |
 | **Interactive In-App Documentation** | Laravel-style 35-chapter reader with Mermaid | ✅ **100% Live in Code** | Live in `/docs`, SVG zoom, pan, fullscreen lightbox |
 | **The Anti-Leak Standard (UDS)** | Zero `.env`, `/var/run/trybase/secrets.sock` + `SO_PEERCRED` | ✅ **100% Live in Code** | Rust daemon (`trybase-daemon`), `trybase-entrypoint`, IMDSv2, RDS IAM, 9/9 tests passing |
+| **TryBase MCP Server** | Model Context Protocol for Claude / Cursor / Agents | ✅ **100% Live in Code** | `@trybase/mcp`, 8 tools, 2 prompts, stdio transport, 7/7 tests passing |
 | **Live CloudWatch Log Streaming** | Real-time container stdout/stderr in UI | 📋 *Documented / Vision* | Dashboard shows orchestrator events; CloudWatch tailing pending |
 | **Tenant-Scoped S3 Backups & DR** | Automated `pg_dump` Lambda with 1-click restore | 📋 *Documented / Vision* | Documented in Pillar 3; Lambda implementation pending |
 | **FinOps Scale-to-Zero Scheduling** | Auto-scale to 0 on idle + rehydration on traffic | 📋 *Documented / Vision* | Documented in Pillar 4; Alarm & rehydration wiring pending |
@@ -53,13 +54,13 @@ This document tracks development progress, our architectural reality check, and 
     SPRINT 4.1     SPRINT 4.2     SPRINT 4.3     SPRINT 4.4     SPRINT 4.5     SPRINT 4.6
    TryBase MCP   The Anti-Leak   Live Log Stream Tenant S3 DR   Scale-to-Zero   Fleet GitOps
       Server         Daemon      (Web Console)  (pg_dump S3)    (Sleep/Wake)    & Migrations
-   [NEXT FOCUS]   [COMPLETED]       (Logs)       (1-Click)        (FinOps)      (Single Push)
+   [COMPLETED]    [COMPLETED]    [NEXT FOCUS]     (1-Click)        (FinOps)      (Single Push)
 ```
 
-### Sprint 4.1: The TryBase MCP Server (`trybase-mcp`) — [NEXT FOCUS]
+### Sprint 4.1: The TryBase MCP Server (`trybase-mcp`) — [COMPLETED]
 *Implement the official Anthropic Model Context Protocol (MCP) server so AI assistants (Claude Desktop, Cursor, OpenClaw, and autonomous agents) can inspect, deploy, scale, and heal TryBase workloads.*
-- [ ] Initialize `packages/trybase-mcp` using the official `@modelcontextprotocol/sdk`.
-- [ ] Implement core tools:
+- [x] Initialize `packages/trybase-mcp` using the official `@modelcontextprotocol/sdk`.
+- [x] Implement core tools:
   - `trybase_list_workloads`: Inspect running tenants, status, and health.
   - `trybase_deploy_workload`: Dispatch asynchronous Step Functions provisioning.
   - `trybase_get_container_logs`: Fetch recent container stdout/stderr.
@@ -67,7 +68,9 @@ This document tracks development progress, our architectural reality check, and 
   - `trybase_create_backup`: Trigger point-in-time PostgreSQL snapshot.
   - `trybase_restart_workload`: Restart unhealthy container services.
   - `trybase_set_secrets`: Securely push encrypted secrets to a tenant's vault.
-- [ ] Author autonomous self-healing prompt scenario (detect OOM $\rightarrow$ scale RAM $\rightarrow$ backup $\rightarrow$ restore health).
+  - `trybase_run_migration`: Run isolated schema migrations with zero cross-tenant database locking.
+- [x] Implement pre-configured autonomous prompts (`trybase_autonomous_sre`, `trybase_fleet_deploy`).
+- [x] Author automated test suite passing 7/7 tests verifying autonomous self-healing (`npm test`).
 
 ### Sprint 4.2: The Anti-Leak Standard (`trybase-daemon` & UDS `SO_PEERCRED`) — [COMPLETED]
 *Eliminate plaintext `.env` files and environment variable dumps across the platform.*

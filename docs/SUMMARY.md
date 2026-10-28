@@ -4,6 +4,7 @@
 
 ### Prologue
 * [Architecture Manifesto](prologue/manifesto.md)
+* [Virtual Single-Tenancy](prologue/virtual-single-tenancy.md)
 * [The Anti-Leak Standard](prologue/anti-leak-standard.md)
 * [TryBase vs Traditional PaaS](prologue/comparative-analysis.md)
 

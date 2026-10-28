@@ -57,3 +57,8 @@ web/.env.local
 web/.env.*.local
 !web/.env.example
 
+# Node Packages
+**/node_modules/
+packages/**/dist/
+
+

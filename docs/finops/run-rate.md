@@ -31,23 +31,32 @@ When workloads run, AWS charges for Fargate Graviton ARM64 resources on a per-se
 
 ---
 
-## 3. High-Density Economics
+## 3. Real-World Fleet Economics: 50 Tenant Workloads
 
-Compare running 50 customer workloads:
+A realistic comparison of running 50 isolated customer workloads:
 
-* **Traditional Single-Tenant Approach**:
-  * 50 ALBs = $1,113/month
-  * 50 RDS instances = $1,020/month
-  * 50 ElastiCache clusters = $1,750/month
-  * **Total: ~$3,883/month**
+* **Approach A: Managed Commercial SaaS / PaaS (Per-Seat / Per-Instance)**:
+  * 50 hosted instances at $50–$100/mo each = **$2,500 – $5,000/month**
+  * Vendor lock-in, zero access to underlying AWS infrastructure or VPCs.
 
-* **TryBase High-Density Engine**:
+* **Approach B: Kubernetes (EKS) with Shared Ingress & Shared RDS**:
+  * 1 EKS Control Plane = $73.00/month
   * 1 Shared ALB = $22.26/month
-  * 1 Shared Graviton RDS = $20.40/month
-  * 50 in-task Redis sidecars = **$0.00**
-  * 50 Standard Fargate MicroVMs = $576.00/month
-  * **Total: ~$688.86/month (Over 82% cost reduction)**
+  * 2 NAT Gateways = $70.20/month
+  * 3 EC2 Worker Nodes (`t4g.xlarge` / `m6g.large` to schedule 50 pods) = ~$200.00/month
+  * 1 Shared RDS PostgreSQL = $35.00/month
+  * **Total: ~$400.46/month** (Requires ongoing SRE maintenance, complex Helm charts, and Ingress routing).
+
+* **Approach C: TryBase Virtual Single-Tenancy (Fargate MicroVMs + Scale-to-Zero)**:
+  * 1 Shared ALB = $22.26/month
+  * 1 Shared Graviton RDS (with `pgvector` & scoped schemas) = $20.40/month
+  * 2 NAT Gateways = $70.20/month
+  * 50 In-Task Redis sidecars = **$0.00**
+  * 50 Standard Fargate MicroVMs with Scale-to-Zero (~8 hrs/day active):
+    * 50 × ~$3.84/mo = ~$192.00/month
+  * **Total: ~$304.86/month (Zero Kubernetes cluster fees, physical MicroVM isolation, and zero .env files)**
 
 ---
 
 [Next: Scale-to-Zero Architecture →](./scale-to-zero.md)
+

@@ -4,20 +4,20 @@
   <img src="docs/assets/banner.png" alt="TryBase Cloud Engine" width="650" />
 </p>
 
-### The Open-Source Cloud Infrastructure Engine for Autonomous AI Agents & Automations
+### The Open-Source Virtual Single-Tenancy Cloud Engine for AI Fleets & Full-Stack Apps
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Documentation](https://img.shields.io/badge/Docs-Laravel%20Style-red.svg)](docs/README.md)
-[![GitHub](https://img.shields.io/badge/GitHub-Open_Source-181717?logo=github)](https://github.com/rgayan12/trybase)
+[![Virtual Single Tenancy](https://img.shields.io/badge/Architecture-Virtual_Single_Tenancy-9945FF.svg)](docs/prologue/virtual-single-tenancy.md)
+[![Anti Leak Standard](https://img.shields.io/badge/Security-The_Anti_Leak_Standard-00C7B7.svg)](docs/security/unix-sockets.md)
+[![Model Context Protocol](https://img.shields.io/badge/MCP-Claude_%26_Cursor_Ready-D97706.svg)](packages/trybase-mcp/README.md)
 [![Hyperscaler](https://img.shields.io/badge/Hyperscaler-AWS_Fargate_%26_Bedrock-FF9900?logo=amazon-aws)](https://aws.amazon.com)
 [![Vector Memory](https://img.shields.io/badge/Vector_Memory-pgvector_RDS-336791.svg?logo=postgresql)](#-schema--database-isolation-with-pgvector)
-[![Infracost FinOps](https://img.shields.io/badge/FinOps-Infracost_Verified-00C7B7.svg)](#-forecasting-cloud-costs-with-infracost)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Deploy, isolate, and scale any containerized AI agent, autonomous worker, or workflow engine as a production-grade multi-tenant fleet on AWS.**  
-Built for AI agencies, developers, and platform teams who need strict client data isolation, dedicated microVM compute, per-tenant IAM security, dynamic wildcard SSL subdomains, and native vector memory (`pgvector`) without paying $50+/seat SaaS fees or maintaining Kubernetes.
+**One Organization. One Private VPC. Your Entire Interconnected AI Stack.**  
+Deploy `n8n` (workflow glue), `Dify` (knowledge & prompt studio), `OpenClaw / Bedrock Agents` (autonomous code runner), and full-stack backends (`Laravel`, `Django`, `Go`, `Node`) simultaneously—with true Firecracker microVM compute isolation, isolated PostgreSQL schemas, and zero plaintext `.env` files on production disk.
 
-[📚 Read Full Documentation](docs/README.md) • [Why TryBase?](#-why-trybase) • [Architecture](#-architecture) • [Run Any Container](#-run-any-containerized-ai-agent-or-workload) • [Cost Breakdown](#-cost-breakdown) • [Quickstart](#-quickstart-guide) • [License](#-license--disclaimer)
+[📚 Read Full Documentation](docs/README.md) • [The Hook: Why TryBase?](#-why-trybase) • [Virtual Single-Tenancy](#-the-two-core-principles) • [Architecture](#-architecture) • [TryBase MCP](#-model-context-protocol-mcp-server) • [Developer CLI](#-trybase-developer-cli) • [Quickstart](#-quickstart-guide)
 
 ---
 
@@ -25,24 +25,25 @@ Built for AI agencies, developers, and platform teams who need strict client dat
 
 ## 💡 Why TryBase?
 
-Building an AI agent or microservice locally in Docker is simple (`docker run my-agent:latest`). But the moment you need to serve **10, 20, or 100 isolated clients or teams**, running containers in production becomes an operational nightmare:
-- **Commercial SaaS Platforms** charge **$50–$200/seat/month**, destroying agency and software profit margins at scale.
-- **A Single Shared Server** creates catastrophic security risks: shared memory, API key cross-contamination, and runaway tool scripts taking down all clients.
-- **Kubernetes (EKS)** requires a dedicated SRE team, complex ingress controllers, and a minimum **$150–$250/month baseline fee** before running a single tenant.
-- **Separate Virtual Machines / RDS per Tenant** creates massive infrastructure bloat, complex patching, and crippling cloud bills.
+Building an AI agent or microservice locally in Docker is simple (`docker run my-agent:latest`). But the moment a company or agency needs to run an **interconnected AI factory** across multiple clients or environments:
+- **Commercial SaaS Platforms** (n8n Cloud + Dify Cloud + Managed Agents) charge **$250–$500+/month** across 3 different dashboards, destroying agency margins.
+- **Single VPS Tools (Coolify, Docker Compose)** run everything on one server with a single point of failure and dump plaintext `.env` secrets on disk where rogue tools or supply-chain packages can read `/proc/<pid>/environ`.
+- **Kubernetes (EKS)** requires a dedicated SRE team, complex ingress controllers, and a minimum **$150–$250/month baseline fee** before running a single container.
+- **Separate Cloud VMs & Databases** create massive infrastructure bloat, complex VPC peering, and crippling AWS bills.
 
-**TryBase solves this with a universal container orchestration pattern:**  
-Hardware-level microVM container isolation on **AWS ECS Fargate**, database and vector isolation on a shared **Graviton RDS PostgreSQL (`pgvector`)** cluster, and instant API orchestration via **AWS Step Functions & CodeBuild**. Bring any Docker image, and TryBase turns it into an isolated, routed, production-grade cloud service in minutes.
+**TryBase solves this with Virtual Single-Tenancy + The Anti-Leak Standard:**  
+Developers write simple single-tenant code without polluting their database with `tenant_id` columns. TryBase orchestrates dedicated **AWS ECS Firecracker MicroVMs**, dedicated PostgreSQL schemas (`schema_<tenant>`), and secret delivery over Linux **Unix Domain Sockets (`AF_UNIX`)** on shared AWS infrastructure (~$35–$65/mo baseline instead of $5,000/mo).
 
-| Feature | Single Docker VPS | Managed AI SaaS | Kubernetes (EKS) | TryBase |
+| Feature | Single VPS (Coolify / Compose) | Managed AI SaaS | Kubernetes (EKS) | TryBase Engine |
 | :--- | :---: | :---: | :---: | :---: |
-| **Compute Isolation** | ❌ Shared Process | ✅ Isolated | ⚠️ Shared Kernel | ✅ **Dedicated Firecracker MicroVM** |
-| **Any Docker Image** | ✅ Manual CLI | ❌ Closed Vendor | ✅ Supported | ✅ **Universal Container Module** |
-| **Database & Vector Memory** | ❌ Shared Tables | ✅ Isolated | ❌ Unmanaged Pods | ✅ **Dedicated RDS Schema/DB with `pgvector`** |
-| **Subdomain Routing** | ❌ Manual Nginx | ✅ Automated | ⚠️ Complex Ingress | ✅ **Automated Host-Header ALB Routing** |
-| **LLM Key Security** | ❌ Shared Env | ✅ Managed | ⚠️ Complex Secrets | ✅ **Unique AES-256 Vault per Tenant** |
-| **Base Platform Cost** | ~$20/mo (No isolation) | N/A ($50+/seat) | ~$150–$250/mo | **~$50–$65/mo (Fleet-wide)** |
-| **Cost for 20 Tenants** | ~$40/mo (Insecure) | ~$1,000–$4,000/mo | ~$350+/mo | **~$120–$140/mo (Full isolation)** |
+| **Compute Isolation** | ❌ Shared Host Process | ✅ Isolated | ⚠️ Shared Node Kernel | ✅ **Dedicated Firecracker MicroVM** |
+| **Secrets Security** | ❌ Plaintext `.env` on disk | ⚠️ Provider Cloud | ⚠️ Insecure ConfigMaps | ✅ **The Anti-Leak Standard (`AF_UNIX` IPC)** |
+| **Multi-Workload AI Stack** | ⚠️ Complex manual stitching | ❌ Disparate SaaS bills | ⚠️ High YAML toil | ✅ **1-Click Fleet (`n8n` + `dify` + `agent`)** |
+| **Database & Vector Memory** | ❌ Shared Tables / Unmanaged | ✅ Isolated | ❌ DIY Pods | ✅ **Dedicated RDS Schema + `pgvector`** |
+| **Subdomain Routing** | ⚠️ Traefik / Nginx on VPS | ✅ Automated | ⚠️ Ingress-NGINX | ✅ **Host-Header ALB with ACM Wildcard TLS** |
+| **AI Agent Control (MCP)** | ❌ None | ❌ Proprietary UI | ❌ Complex Ops | ✅ **Native MCP for Claude & Cursor** |
+| **Base Platform Cost** | ~$20/mo (No fault isolation) | ~$250–$500/mo | ~$150–$250/mo | **~$35–$65/mo (Fleet-wide)** |
+| **Cost for 20 Tenants** | ~$60/mo (Single crash takes all) | ~$2,000–$5,000/mo | ~$350+/mo | **~$120–$140/mo (Full microVM isolation)** |
 
 ---
 
@@ -101,6 +102,105 @@ TryBase provisions a dedicated AES-256 secret vault per tenant in AWS Secrets Ma
 - **DynamoDB State Lock Table**: Manages distributed state locks and MD5 cryptographic integrity for Terraform (`n8n-hosting-saas-tf-locks`). Prevents race conditions and state corruption when multiple tenants are provisioned concurrently by CodeBuild or when local administrators run Terraform.
 
 ---
+
+## 🛡️ The Two Core Principles
+
+### 1. Virtual Single-Tenancy (The Death of `tenant_id`)
+In traditional multi-tenancy, developers spend months adding `tenant_id` columns to every database table, wrapping every ORM query in scoping middleware, and praying a junior developer doesn't write `SELECT * FROM users` without a `WHERE tenant_id = ?` clause. One bug exposes every client's private data.
+
+**TryBase introduces Virtual Single-Tenancy:**
+- **Single-Tenant Simplicity**: You write code as if only one company exists in the world.
+- **Physical Isolation**: Each workload runs inside a dedicated **AWS Firecracker MicroVM** (ECS Fargate) with zero shared memory and isolated PostgreSQL schemas (`schema_<tenant>`) on a high-density Graviton RDS cluster.
+- **Micro-Economics**: You get the rock-solid isolation of dedicated hardware with the cost efficiency of shared infrastructure (~$35–$65/mo base for the entire cluster).
+
+---
+
+### 2. The Anti-Leak Standard
+Environment variables (`process.env`) and `.env` files are the #1 vulnerability in modern cloud computing. A single malicious npm/pip dependency, debug endpoint, or server error log dumps raw API keys to external attackers.
+
+**TryBase enforces the Anti-Leak Standard:**
+- **Zero Plaintext Files on Disk**: Production tasks have no `.env` files.
+- **Sanitized `process.env`**: Container environments are scrubbed clean of production credentials.
+- **Kernel-Level Identity Verification**: Secrets are delivered in-memory via an in-task Linux Unix Domain Socket (`/var/run/trybase/secrets.sock`).
+- **`SO_PEERCRED` & `/proc/<pid>/exe` Binary Inspection**: The TryBase Rust sidecar daemon queries the Linux kernel to verify caller PID, UID, and binary authenticity before vending secrets.
+- **Ephemeral STS & RDS IAM Tokens**: Database passwords expire every 15 minutes and rotate silently in memory.
+
+---
+
+## 🤖 Model Context Protocol (MCP) Server (`@trybase/mcp`)
+
+TryBase includes a first-class **Anthropic Model Context Protocol (MCP)** server, turning **Claude Desktop**, **Cursor**, or an autonomous **Bedrock Agent** into your fleet's Site Reliability Engineer (SRE).
+
+Plugging `@trybase/mcp` into your agent gives it 10 native cloud primitives:
+1. `trybase_list_workloads`: Real-time inventory of all workloads, memory pressure, and p95 latencies.
+2. `trybase_deploy_fleet`: Deploy multi-workload fleets (`n8n` + `dify` + `agent`) from declarative manifests.
+3. `trybase_deploy_workload`: Spin up isolated microVM containers with dedicated DB schemas.
+4. `trybase_exec_command`: Execute interactive commands inside isolated microVM sandboxes.
+5. `trybase_get_container_logs`: Stream and filter stdout/stderr CloudWatch logs.
+6. `trybase_scale_workload`: Dynamically scale CPU & RAM with zero-downtime rolling updates.
+7. `trybase_restart_workload`: Force redeployment and verify container healthchecks.
+8. `trybase_create_backup`: On-demand logical S3 database backups (`pg_dump`).
+9. `trybase_set_secrets`: Push encrypted credentials directly into AWS Secrets Manager vaults.
+10. `trybase_run_migration`: Run schema migrations in isolated ephemeral task containers.
+
+```json
+// Add to claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "trybase": {
+      "command": "npx",
+      "args": ["-y", "@trybase/mcp@latest"],
+      "env": {
+        "TRYBASE_API_KEY": "tb_org_live_...",
+        "AWS_REGION": "eu-west-2"
+      }
+    }
+  }
+}
+```
+
+---
+
+## ⚡ TryBase Developer CLI (`@trybase/cli`)
+
+Never paste API keys or database credentials into web dashboard forms. The TryBase CLI closes the developer workflow loop:
+
+```bash
+# 1. Install CLI
+npm install -g @trybase/cli
+
+# 2. Push production secrets directly to AWS Secrets Manager (Zero disk exposure)
+trybase env push .env.production --workload workflow
+
+# 3. Deploy an entire multi-workload AI fleet
+trybase fleet deploy trybase.fleet.yml
+
+# 4. Inspect fleet status and container health
+trybase status
+```
+
+### Declarative Fleet Manifest (`trybase.fleet.yml`)
+```yaml
+organization: acme-ai
+workloads:
+  - name: workflow
+    archetype: n8n
+    subdomain: n8n.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+
+  - name: knowledge
+    archetype: dify
+    subdomain: dify.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+
+  - name: runner
+    archetype: openclaw
+    subdomain: agent.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+```
 
 ## 💰 Cost Breakdown
 

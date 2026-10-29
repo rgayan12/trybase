@@ -4,10 +4,11 @@ import { MockInfrastructureProvider } from './provider.js';
 import { TOOLS, PROMPTS, handleToolCall } from './tools.js';
 
 test('TryBase MCP Tools Definition', () => {
-  assert.equal(TOOLS.length, 9);
+  assert.equal(TOOLS.length, 10);
   const toolNames = TOOLS.map((t) => t.name);
   assert.ok(toolNames.includes('trybase_list_workloads'));
   assert.ok(toolNames.includes('trybase_deploy_workload'));
+  assert.ok(toolNames.includes('trybase_deploy_fleet'));
   assert.ok(toolNames.includes('trybase_get_container_logs'));
   assert.ok(toolNames.includes('trybase_scale_workload'));
   assert.ok(toolNames.includes('trybase_restart_workload'));
@@ -191,4 +192,57 @@ test('Interactive Sandbox Execution - trybase_exec_command', async () => {
   assert.equal(failData.exitCode, 1);
   assert.ok(failData.stderr.includes('failed with exit code 1'));
 });
+
+test('Multi-Workload Organization Fleet Deployment - trybase_deploy_fleet', async () => {
+  const provider = new MockInfrastructureProvider();
+
+  const fleetRes = await handleToolCall(provider, 'trybase_deploy_fleet', {
+    organizationId: 'acme-ai',
+    workloads: [
+      {
+        name: 'workflow',
+        subdomain: 'n8n.acme',
+        archetype: 'n8n',
+        cpu: 1024,
+        memory: 2048,
+        secrets: { N8N_BASIC_AUTH_ACTIVE: 'true' },
+      },
+      {
+        name: 'knowledge',
+        subdomain: 'dify.acme',
+        archetype: 'dify',
+        cpu: 1024,
+        memory: 2048,
+      },
+      {
+        name: 'runner',
+        subdomain: 'agent.acme',
+        archetype: 'openclaw',
+        cpu: 512,
+        memory: 1024,
+      },
+    ],
+  });
+
+  assert.equal(fleetRes.isError, undefined);
+  const fleetData = JSON.parse(fleetRes.content[0].text);
+  assert.equal(fleetData.organizationId, 'acme-ai');
+  assert.equal(fleetData.status, 'FLEET_DEPLOYMENT_DISPATCHED');
+  assert.equal(fleetData.deployedWorkloads.length, 3);
+
+  // Verify all 3 workloads were created and scoped to the organization
+  const n8nWorkload = await provider.getWorkload('acme-ai-workflow');
+  assert.ok(n8nWorkload);
+  assert.equal(n8nWorkload.archetype, 'n8n');
+  assert.equal(n8nWorkload.organizationId, 'acme-ai');
+
+  const difyWorkload = await provider.getWorkload('acme-ai-knowledge');
+  assert.ok(difyWorkload);
+  assert.equal(difyWorkload.archetype, 'dify');
+
+  const agentWorkload = await provider.getWorkload('acme-ai-runner');
+  assert.ok(agentWorkload);
+  assert.equal(agentWorkload.archetype, 'openclaw');
+});
+
 

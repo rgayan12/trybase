@@ -1,0 +1,56 @@
+# ==============================================================================
+# TryBase Multi-Workload Fleet Manifest
+#
+# Deploy an interconnected ecosystem of AI agents and backends for an organization
+# with Virtual Single-Tenancy, isolated PostgreSQL schemas, and the Anti-Leak Standard.
+#
+# Deploy via CLI:
+#   trybase fleet deploy trybase.fleet.yml
+#
+# Or via Claude / Cursor MCP:
+#   "Deploy our fleet manifest and verify container health"
+# ==============================================================================
+
+organization: acme-ai
+version: "1.0"
+
+workloads:
+  # 1. Workflow Automation Engine (n8n)
+  - name: workflow
+    archetype: n8n
+    subdomain: n8n.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+    secrets:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      WEBHOOK_URL: "https://n8n.acme.trybase.dev/"
+
+  # 2. Knowledge & Prompt Studio (Dify)
+  - name: knowledge
+    archetype: dify
+    subdomain: dify.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+    secrets:
+      MODE: "api"
+      VECTOR_STORE: "pgvector"
+
+  # 3. Autonomous Execution Runner (OpenClaw / Bedrock Agent)
+  - name: runner
+    archetype: openclaw
+    subdomain: agent.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+    secrets:
+      WORKSPACE_DIR: "/workspace"
+      ENABLE_ANTI_LEAK: "true"
+
+  # 4. Optional Custom Backend API (Laravel / Django / Node / Go)
+  - name: core-api
+    archetype: laravel
+    subdomain: api.acme.trybase.dev
+    cpu: 512
+    memory: 1024
+    secrets:
+      APP_ENV: "production"
+      APP_DEBUG: "false"

@@ -25,7 +25,7 @@ export const TOOLS = [
         },
         archetype: {
           type: 'string',
-          enum: ['laravel', 'django', 'n8n', 'agent', 'dify', 'custom'],
+          enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'bedrock-agent', 'dify', 'custom'],
           description: 'Application framework archetype',
         },
         imageTag: {
@@ -192,6 +192,40 @@ export const TOOLS = [
       required: ['tenantId', 'command'],
     },
   },
+  {
+    name: 'trybase_deploy_fleet',
+    description: 'Deploy or orchestrate an entire interconnected multi-workload fleet for an organization (e.g. n8n + dify + openclaw agent + backend) from a declarative specification.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        organizationId: {
+          type: 'string',
+          description: 'Unique identifier for the organization (e.g. acme-corp)',
+        },
+        workloads: {
+          type: 'array',
+          description: 'Array of workloads to provision simultaneously within the organization namespace',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Workload name (e.g. workflow, knowledge, runner)' },
+              subdomain: { type: 'string', description: 'Subdomain for ingress (e.g. n8n.acme.trybase.io)' },
+              archetype: {
+                type: 'string',
+                enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'bedrock-agent', 'dify', 'custom'],
+              },
+              imageTag: { type: 'string' },
+              cpu: { type: 'number', default: 512 },
+              memory: { type: 'number', default: 1024 },
+              secrets: { type: 'object', additionalProperties: { type: 'string' } },
+            },
+            required: ['name', 'subdomain', 'archetype'],
+          },
+        },
+      },
+      required: ['organizationId', 'workloads'],
+    },
+  },
 ];
 
 export const PROMPTS = [
@@ -233,6 +267,21 @@ export async function handleToolCall(
             {
               type: 'text',
               text: JSON.stringify(workloads, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'trybase_deploy_fleet': {
+        const res = await provider.deployFleet({
+          organizationId: args.organizationId,
+          workloads: args.workloads,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(res, null, 2),
             },
           ],
         };

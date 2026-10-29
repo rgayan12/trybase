@@ -1,0 +1,34 @@
+{
+  "name": "@trybase/cli",
+  "version": "0.1.0",
+  "description": "The Developer CLI for TryBase: Push secrets to AWS Secrets Manager and deploy multi-workload AI fleets",
+  "type": "module",
+  "bin": {
+    "trybase": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "node --test dist/cli.test.js"
+  },
+  "keywords": [
+    "trybase",
+    "cli",
+    "anti-leak",
+    "virtual-single-tenancy",
+    "ai-agents",
+    "mcp"
+  ],
+  "author": "TryBase Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.758.0",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.5",
+    "yaml": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}

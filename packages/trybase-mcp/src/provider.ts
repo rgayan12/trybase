@@ -1,6 +1,11 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
 import {
   Workload,
   DeployWorkloadInput,
+  DeployFleetInput,
+  DeployFleetResult,
   ScaleWorkloadInput,
   LogEvent,
   BackupResult,
@@ -14,6 +19,7 @@ export interface InfrastructureProvider {
   listWorkloads(): Promise<Workload[]>;
   getWorkload(tenantId: string): Promise<Workload | null>;
   deployWorkload(input: DeployWorkloadInput): Promise<{ executionArn?: string; status: string; message: string }>;
+  deployFleet(input: DeployFleetInput): Promise<DeployFleetResult>;
   getLogs(tenantId: string, limit?: number, filter?: string): Promise<LogEvent[]>;
   scaleWorkload(input: ScaleWorkloadInput): Promise<{
     previous: { cpu: number; memory: number };
@@ -171,6 +177,50 @@ export class MockInfrastructureProvider implements InfrastructureProvider {
       executionArn,
       status: 'PROVISIONING_STARTED',
       message: `Step Functions state machine execution started for tenant '${input.tenantId}' (${input.archetype}) at https://${input.subdomain}.trybase.io`,
+    };
+  }
+
+  async deployFleet(input: DeployFleetInput): Promise<DeployFleetResult> {
+    const deployed: Array<{
+      name: string;
+      subdomain: string;
+      archetype: any;
+      status: string;
+      endpointUrl: string;
+    }> = [];
+
+    for (const spec of input.workloads) {
+      const tenantId = `${input.organizationId}-${spec.name}`;
+      await this.deployWorkload({
+        tenantId,
+        subdomain: spec.subdomain,
+        archetype: spec.archetype,
+        imageTag: spec.imageTag,
+        cpu: spec.cpu,
+        memory: spec.memory,
+        secrets: spec.secrets,
+      });
+
+      // Update organizationId on the stored workload
+      const w = this.workloads.get(tenantId);
+      if (w) {
+        w.organizationId = input.organizationId;
+      }
+
+      deployed.push({
+        name: spec.name,
+        subdomain: spec.subdomain,
+        archetype: spec.archetype,
+        status: 'PROVISIONING',
+        endpointUrl: `https://${spec.subdomain}.trybase.io`,
+      });
+    }
+
+    return {
+      organizationId: input.organizationId,
+      deployedWorkloads: deployed,
+      status: 'FLEET_DEPLOYMENT_DISPATCHED',
+      message: `Fleet deployment initiated for organization '${input.organizationId}': ${deployed.length} workloads provisioning.`,
     };
   }
 
@@ -411,31 +461,72 @@ export class MockInfrastructureProvider implements InfrastructureProvider {
   }
 }
 
+function getStoredLocalSession(): {
+  sessionToken?: string;
+  supabaseUrl?: string;
+  apiUrl?: string;
+  defaultOrg?: string;
+} {
+  try {
+    const p = path.join(os.homedir(), '.trybase', 'config.json');
+    if (fs.existsSync(p)) {
+      return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    }
+  } catch {
+    // Ignore error if file doesn't exist
+  }
+  return {};
+}
+
 /**
  * Live AWS & Supabase Infrastructure Provider
  */
 export class AWSInfrastructureProvider implements InfrastructureProvider {
   private region: string;
   private sfnArn?: string;
+  private apiUrl?: string;
+  private sessionToken?: string;
+  private supabaseUrl?: string;
 
   constructor() {
+    const stored = getStoredLocalSession();
     this.region = process.env.AWS_REGION || 'eu-west-2';
     this.sfnArn = process.env.TRYBASE_SFN_ARN;
+    this.apiUrl = process.env.TRYBASE_API_URL || stored.apiUrl;
+    this.sessionToken = process.env.TRYBASE_SESSION_TOKEN || process.env.SUPABASE_ACCESS_TOKEN || stored.sessionToken;
+    this.supabaseUrl = process.env.SUPABASE_URL || stored.supabaseUrl;
   }
 
   async listWorkloads(): Promise<Workload[]> {
-    // If Supabase is configured, fetch from active tenants table
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    // 1. If Supabase is configured, fetch from active workloads/tenants table using session token or anon key
+    const supabaseUrl = this.supabaseUrl || process.env.SUPABASE_URL;
+    const supabaseKey = this.sessionToken || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (supabaseUrl && supabaseKey) {
       try {
         const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const { data, error } = await supabase.from('tenants').select('*');
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+          global: {
+            headers: this.sessionToken ? { Authorization: `Bearer ${this.sessionToken}` } : {},
+          },
+        });
+        
+        // Try workloads table first, fallback to tenants
+        let { data, error } = await supabase.from('workloads').select('*');
+        if (error || !data) {
+          const res = await supabase.from('tenants').select('*');
+          data = res.data;
+          error = res.error;
+        }
+
         if (!error && data) {
           return data.map((t: any) => ({
-            tenantId: t.tenant_id,
+            tenantId: t.slug || t.tenant_id,
+            organizationId: t.org_id,
             subdomain: t.subdomain,
             archetype: (t.archetype || 'custom') as any,
             status: (t.status || 'HEALTHY') as any,
@@ -450,7 +541,7 @@ export class AWSInfrastructureProvider implements InfrastructureProvider {
           }));
         }
       } catch (err) {
-        console.warn('Failed to query Supabase for tenants, falling back to mock provider', err);
+        console.warn('Failed to query Supabase for workloads, checking fallback', err);
       }
     }
 
@@ -464,35 +555,107 @@ export class AWSInfrastructureProvider implements InfrastructureProvider {
   }
 
   async deployWorkload(input: DeployWorkloadInput): Promise<{ executionArn?: string; status: string; message: string }> {
-    if (!this.sfnArn) {
-      return new MockInfrastructureProvider().deployWorkload(input);
+    // 1. If API Gateway URL and Supabase session token exist, dispatch over API Gateway
+    if (this.apiUrl && this.sessionToken) {
+      try {
+        const res = await fetch(`${this.apiUrl}/provision`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.sessionToken}`,
+          },
+          body: JSON.stringify({
+            tenant_id: input.tenantId,
+            subdomain: input.subdomain,
+            archetype: input.archetype,
+            cpu: input.cpu || 512,
+            memory: input.memory || 1024,
+            image_tag: input.imageTag,
+          }),
+        });
+
+        if (res.ok) {
+          const data: any = await res.json().catch(() => ({}));
+          return {
+            executionArn: data.executionArn || data.execution_arn || `exec-apigw-${Date.now()}`,
+            status: 'PROVISIONING_STARTED',
+            message: `Dispatched provisioning via API Gateway for tenant '${input.tenantId}' (${input.archetype}) at https://${input.subdomain}.${process.env.TRYBASE_DOMAIN || 'trybase.io'}`
+          };
+        }
+      } catch (err) {
+        console.warn('API Gateway dispatch failed, checking direct Step Functions fallback', err);
+      }
     }
 
-    const { SFNClient, StartExecutionCommand } = await import('@aws-sdk/client-sfn');
-    const sfn = new SFNClient({ region: this.region });
+    // 2. Direct AWS Step Functions dispatch (Operator mode via AWS STS)
+    if (this.sfnArn) {
+      const { SFNClient, StartExecutionCommand } = await import('@aws-sdk/client-sfn');
+      const sfn = new SFNClient({ region: this.region });
 
-    const executionName = `tb-${input.tenantId}-${Date.now()}`;
-    const payload = {
-      tenant_id: input.tenantId,
-      subdomain: input.subdomain,
-      archetype: input.archetype,
-      cpu: input.cpu || 512,
-      memory: input.memory || 1024,
-      image_tag: input.imageTag,
-    };
+      const executionName = `tb-${input.tenantId}-${Date.now()}`;
+      const payload = {
+        tenant_id: input.tenantId,
+        subdomain: input.subdomain,
+        archetype: input.archetype,
+        cpu: input.cpu || 512,
+        memory: input.memory || 1024,
+        image_tag: input.imageTag,
+      };
 
-    const res = await sfn.send(
-      new StartExecutionCommand({
-        stateMachineArn: this.sfnArn,
-        name: executionName,
-        input: JSON.stringify(payload),
-      })
-    );
+      const res = await sfn.send(
+        new StartExecutionCommand({
+          stateMachineArn: this.sfnArn,
+          name: executionName,
+          input: JSON.stringify(payload),
+        })
+      );
+
+      return {
+        executionArn: res.executionArn,
+        status: 'PROVISIONING_STARTED',
+        message: `Step Functions state machine execution started for tenant '${input.tenantId}'. Execution ARN: ${res.executionArn}`,
+      };
+    }
+
+    // 3. Fallback to mock simulation
+    return new MockInfrastructureProvider().deployWorkload(input);
+  }
+
+  async deployFleet(input: DeployFleetInput): Promise<DeployFleetResult> {
+    const deployed: Array<{
+      name: string;
+      subdomain: string;
+      archetype: any;
+      status: string;
+      endpointUrl: string;
+    }> = [];
+
+    for (const spec of input.workloads) {
+      const tenantId = `${input.organizationId}-${spec.name}`;
+      await this.deployWorkload({
+        tenantId,
+        subdomain: spec.subdomain,
+        archetype: spec.archetype,
+        imageTag: spec.imageTag,
+        cpu: spec.cpu,
+        memory: spec.memory,
+        secrets: spec.secrets,
+      });
+
+      deployed.push({
+        name: spec.name,
+        subdomain: spec.subdomain,
+        archetype: spec.archetype,
+        status: 'PROVISIONING',
+        endpointUrl: `https://${spec.subdomain}.${process.env.TRYBASE_DOMAIN || 'trybase.io'}`,
+      });
+    }
 
     return {
-      executionArn: res.executionArn,
-      status: 'PROVISIONING_STARTED',
-      message: `Step Functions state machine execution started for tenant '${input.tenantId}'. Execution ARN: ${res.executionArn}`,
+      organizationId: input.organizationId,
+      deployedWorkloads: deployed,
+      status: 'FLEET_DEPLOYMENT_DISPATCHED',
+      message: `Fleet deployment initiated for organization '${input.organizationId}': ${deployed.length} workloads provisioning.`,
     };
   }
 

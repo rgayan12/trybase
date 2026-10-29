@@ -3,6 +3,8 @@ export type WorkloadArchetype =
   | 'django' 
   | 'n8n' 
   | 'agent' 
+  | 'openclaw'
+  | 'bedrock-agent'
   | 'dify' 
   | 'custom';
 
@@ -28,6 +30,7 @@ export interface WorkloadMetrics {
 
 export interface Workload {
   tenantId: string;
+  organizationId?: string;
   subdomain: string;
   archetype: WorkloadArchetype;
   status: WorkloadStatus;
@@ -37,6 +40,34 @@ export interface Workload {
   metrics?: WorkloadMetrics;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FleetWorkloadSpec {
+  name: string;
+  subdomain: string;
+  archetype: WorkloadArchetype;
+  imageTag?: string;
+  cpu?: number;
+  memory?: number;
+  secrets?: Record<string, string>;
+}
+
+export interface DeployFleetInput {
+  organizationId: string;
+  workloads: FleetWorkloadSpec[];
+}
+
+export interface DeployFleetResult {
+  organizationId: string;
+  deployedWorkloads: Array<{
+    name: string;
+    subdomain: string;
+    archetype: WorkloadArchetype;
+    status: string;
+    endpointUrl: string;
+  }>;
+  status: string;
+  message: string;
 }
 
 export interface DeployWorkloadInput {

@@ -1,0 +1,61 @@
+# ==============================================================================
+# TryBase: OpenClaw Autonomous Multi-System Agent Adapter
+#
+# Runs an isolated OpenClaw Autonomous Agent with:
+# 1. Firecracker MicroVM process isolation on AWS Fargate.
+# 2. Keyless AWS Bedrock IAM Task Role (15m auto-rotated STS session tokens).
+# 3. In-Task Redis working memory (127.0.0.1:6379, zero added cloud cost).
+# 4. Dedicated RDS PostgreSQL schema with pgvector for long-term episodic memory.
+# 5. Anti-Leak Standard: Secrets injected via /var/run/trybase/secrets.sock.
+#
+# How to deploy:
+#   cp tenant_openclaw.tf.example tenant_openclaw_acme.tf
+#   terraform apply -target=module.openclaw_acme
+# ==============================================================================
+
+module "openclaw_acme" {
+  source = "./modules/generic-workload"
+
+  service_name      = "openclaw-acme"
+  subdomain         = "openclaw-acme"
+  container_image   = "ghcr.io/trybase/openclaw-runner:latest"
+  container_port    = 8000
+  health_check_path = "/healthz"
+  cpu               = 1024 # 1.0 vCPU
+  memory            = 2048 # 2048 MiB
+
+  # Platform Add-on Flags
+  enable_redis      = true # Injects local redis:alpine sidecar on 127.0.0.1:6379
+  enable_bedrock    = true # Injects IAM Task Role for keyless Claude 3.5 on Bedrock
+
+  environment_variables = {
+    PORT                   = "8000"
+    TRYBASE_TENANT_ID      = "openclaw-acme"
+    TRYBASE_SOCKET_PATH    = "/var/run/trybase/secrets.sock"
+    LOG_LEVEL              = "INFO"
+    ENABLE_ANTI_LEAK       = "true"
+
+    # Fast In-Task Working Memory
+    REDIS_URL              = "redis://127.0.0.1:6379/0"
+    WORKSPACE_DIR          = "/workspace"
+
+    # Long-term Vector Memory on TryBase Shared RDS
+    DB_HOST                = aws_db_instance.main.address
+    DB_PORT                = "5432"
+    DB_DATABASE            = "postgres"
+    DB_SCHEMA              = "schema_openclaw_acme"
+
+    # Internal Mesh Endpoints (Co-located workloads)
+    N8N_INTERNAL_URL       = "http://workflow.internal:5678"
+    DIFY_INTERNAL_URL      = "http://knowledge.internal:5001"
+  }
+
+  # Bind to TryBase shared infrastructure
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnets
+  ecs_cluster_name           = aws_ecs_cluster.main.name
+  alb_listener_arn           = aws_lb_listener.https.arn
+  alb_security_group_id      = aws_security_group.alb.id
+  alb_listener_rule_priority = 260
+  domain_name                = var.base_domain
+}

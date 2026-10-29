@@ -334,13 +334,13 @@ const Dashboard = () => {
                   </div>
                   <div style={{ flexGrow: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
-                      <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>Custom AI Container / Agent</strong>
+                      <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>OpenClaw Autonomous Agent / Container</strong>
                       <span style={{ backgroundColor: '#dcfce7', color: '#15803d', fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
                         HERO
                       </span>
                     </div>
                     <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>
-                      Run any Docker image (FastAPI, CrewAI, LangGraph) with keyless Bedrock IAM & pgvector.
+                      Run OpenClaw, CrewAI, or FastAPI with keyless Bedrock IAM, in-task Redis memory, and Anti-Leak UDS.
                     </p>
                   </div>
                 </div>
@@ -868,7 +868,7 @@ const Dashboard = () => {
                               border: `1px solid ${(ws.workload_type === 'agent' || ws.workload_type === 'generic') ? '#bbf7d0' : ws.workload_type === 'dify' ? '#e9d5ff' : '#dbeafe'}`
                             }}>
                               {(ws.workload_type === 'agent' || ws.workload_type === 'generic') ? <Cpu size={12} /> : ws.workload_type === 'dify' ? <Bot size={12} /> : <Zap size={12} />}
-                              {(ws.workload_type === 'agent' || ws.workload_type === 'generic') ? 'Custom AI Container' : ws.workload_type === 'dify' ? 'Dify AI Studio' : 'n8n Automation'}
+                              {(ws.workload_type === 'agent' || ws.workload_type === 'generic' || ws.workload_type === 'openclaw') ? 'OpenClaw / Agent' : ws.workload_type === 'dify' ? 'Dify AI Studio' : 'n8n Automation'}
                             </span>
 
                             {/* pgvector badge */}

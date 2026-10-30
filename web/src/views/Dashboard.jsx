@@ -3,7 +3,7 @@ import {
   Server, Settings, LogOut, Loader2, Zap, CheckCircle2,
   Activity, Database, Bot, Sparkles, Cpu,
   ShieldCheck, Terminal, ChevronDown, ChevronUp, Copy, Check, ExternalLink, Lock,
-  Plus, BookOpen, AlertCircle
+  Plus, BookOpen, AlertCircle, Eye, EyeOff, Key
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
@@ -20,6 +20,11 @@ const generateSlug = () => {
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
+  const [tokenCopied, setTokenCopied] = useState(false);
+  const [cliCopied, setCliCopied] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [tokenTtl, setTokenTtl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [workspaces, setWorkspaces] = useState([]);
@@ -49,17 +54,29 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    if (!session?.expires_at) return;
+    const updateTtl = () => {
+      const remaining = session.expires_at - Math.floor(Date.now() / 1000);
+      setTokenTtl(remaining > 0 ? remaining : 0);
+    };
+    updateTtl();
+    const interval = setInterval(updateTtl, 1000);
+    return () => clearInterval(interval);
+  }, [session]);
+
+  useEffect(() => {
     setShowGame(false);
   }, [activeTab]);
 
   useEffect(() => {
     const initDashboard = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user) {
         navigate('/');
         return;
       }
-      setUser(user);
+      setSession(currentSession);
+      setUser(currentSession.user);
 
       // Fetch User Workspaces
       const { data: wsData, error: wsError } = await supabase
@@ -1161,65 +1178,281 @@ const Dashboard = () => {
           }}>
             <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
-                Account Settings
+                Account & Developer Settings
               </h2>
               <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
-                Manage your console profile and password credentials.
+                Manage your console credentials, Developer CLI tokens, and MCP server access.
               </p>
             </div>
 
-            <div style={{ padding: '2rem', maxWidth: '520px' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>
-                Change Password
-              </h3>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const newPass = e.target.newPassword.value;
-                if (!newPass || newPass.length < 6) return alert("Password must be at least 6 characters.");
-                const { error } = await supabase.auth.updateUser({ password: newPass });
-                if (error) alert("Error updating password: " + error.message);
-                else {
-                  alert("Password updated successfully!");
-                  e.target.reset();
-                }
+            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', maxWidth: '780px' }}>
+              {/* Card 1: Developer CLI & MCP Ephemeral Session Token */}
+              <div style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1.5rem',
+                position: 'relative'
               }}>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', color: '#334155', fontSize: '0.85rem', fontWeight: 600 }}>
-                    New Password
-                  </label>
-                  <input
-                    name="newPassword"
-                    type="password"
-                    placeholder="Enter new password (min. 6 chars)"
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 0.85rem',
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
                       borderRadius: '6px',
-                      color: '#0f172a',
-                      fontSize: '0.92rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
+                      backgroundColor: '#e0f2fe',
+                      color: '#0284c7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Terminal size={18} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                        Developer CLI & MCP Session Token
+                      </h3>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Anti-Leak Standard: Short-lived 1-hour JWT. Zero permanent static API keys.
+                      </span>
+                    </div>
+                  </div>
+
+                  {session?.access_token ? (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.25rem 0.65rem',
+                      backgroundColor: '#dcfce7',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '20px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: '#15803d'
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16a34a' }}></span>
+                      {tokenTtl !== null
+                        ? `Expires in ${Math.floor(tokenTtl / 60)}m ${tokenTtl % 60}s`
+                        : 'Active (1-Hour STS)'}
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.25rem 0.65rem',
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '20px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: '#b91c1c'
+                    }}>
+                      No Active Session
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '0.65rem 1.25rem',
-                    backgroundColor: '#10b981',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Update Password
-                </button>
-              </form>
+
+                <p style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.5, margin: '0.75rem 0 1rem 0' }}>
+                  Use this ephemeral session token to authenticate <code style={{ backgroundColor: '#e2e8f0', padding: '0.15rem 0.35rem', borderRadius: '4px', fontSize: '0.8rem' }}>@trybase/cli</code> and <code style={{ backgroundColor: '#e2e8f0', padding: '0.15rem 0.35rem', borderRadius: '4px', fontSize: '0.8rem' }}>@trybase/mcp</code> (Claude Desktop / Cursor) without transmitting your master password.
+                </p>
+
+                {/* Masked Token Field */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Active 1-Hour Session JWT
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type={showToken ? 'text' : 'password'}
+                        readOnly
+                        value={session?.access_token || 'No active session token available'}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 2.5rem 0.65rem 0.85rem',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '6px',
+                          fontFamily: 'monospace',
+                          fontSize: '0.82rem',
+                          color: '#0f172a',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowToken(!showToken)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '4px'
+                        }}
+                        title={showToken ? 'Mask Token' : 'Reveal Token'}
+                      >
+                        {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (session?.access_token) {
+                          navigator.clipboard?.writeText(session.access_token);
+                          setTokenCopied(true);
+                          setTimeout(() => setTokenCopied(false), 2500);
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        padding: '0.65rem 1.1rem',
+                        backgroundColor: tokenCopied ? '#16a34a' : '#0f172a',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                    >
+                      {tokenCopied ? <Check size={16} /> : <Copy size={16} />}
+                      <span>{tokenCopied ? 'Copied Token!' : 'Copy Token'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Instant CLI Login Command */}
+                <div style={{
+                  backgroundColor: '#0f172a',
+                  borderRadius: '6px',
+                  padding: '0.85rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                    <span style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'block', marginBottom: '0.2rem' }}>
+                      One-line CLI Authentication
+                    </span>
+                    <code style={{ color: '#38bdf8', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+                      {session?.access_token
+                        ? `trybase login --token ${session.access_token.substring(0, 24)}...`
+                        : 'trybase login --token <session_token>'}
+                    </code>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (session?.access_token) {
+                        navigator.clipboard?.writeText(`trybase login --token ${session.access_token}`);
+                        setCliCopied(true);
+                        setTimeout(() => setCliCopied(false), 2500);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: cliCopied ? '#16a34a' : 'rgba(255, 255, 255, 0.1)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '4px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {cliCopied ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{cliCopied ? 'Copied Command!' : 'Copy Command'}</span>
+                  </button>
+                </div>
+
+                {/* MCP Server Integration Tip */}
+                <div style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: '#64748b' }}>
+                  <ShieldCheck size={14} color="#10b981" />
+                  <span>
+                    Once logged in, your Claude Desktop & Cursor MCP servers automatically inherit this session from <code style={{ color: '#0f172a' }}>~/.trybase/config.json</code>.
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 2: Change Password */}
+              <div style={{ maxWidth: '520px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                  Change Account Password
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '0 0 1rem 0' }}>
+                  Update your master password for logging into the TryBase console.
+                </p>
+
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const newPass = e.target.newPassword.value;
+                  if (!newPass || newPass.length < 6) return alert("Password must be at least 6 characters.");
+                  const { error } = await supabase.auth.updateUser({ password: newPass });
+                  if (error) alert("Error updating password: " + error.message);
+                  else {
+                    alert("Password updated successfully!");
+                    e.target.reset();
+                  }
+                }}>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.4rem', color: '#334155', fontSize: '0.85rem', fontWeight: 600 }}>
+                      New Password
+                    </label>
+                    <input
+                      name="newPassword"
+                      type="password"
+                      placeholder="Enter new password (min. 6 chars)"
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        color: '#0f172a',
+                        fontSize: '0.92rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '0.65rem 1.25rem',
+                      backgroundColor: '#10b981',
+                      border: 'none',
+                      borderRadius: '6px',
+                      color: '#ffffff',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Update Password
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         ) : null}

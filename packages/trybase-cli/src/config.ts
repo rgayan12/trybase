@@ -8,6 +8,7 @@ export interface TryBaseConfig {
   expiresAt?: number;
   userEmail?: string;
   supabaseUrl?: string;
+  supabaseKey?: string;
   apiUrl?: string;
   defaultOrg?: string;
   region?: string;
@@ -26,9 +27,10 @@ export function loadConfig(): TryBaseConfig {
     // Return empty on parse error
   }
   return {
-    apiUrl: process.env.TRYBASE_API_URL || 'https://api.trybase.io',
+    apiUrl: process.env.TRYBASE_API_URL || 'https://pweai7qxlh.execute-api.eu-west-2.amazonaws.com/provision',
     sessionToken: process.env.TRYBASE_SESSION_TOKEN || process.env.SUPABASE_ACCESS_TOKEN,
     supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_ANON_KEY,
     region: process.env.AWS_REGION || 'eu-west-2',
     defaultOrg: process.env.TRYBASE_ORG || 'default',
   };

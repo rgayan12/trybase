@@ -21,6 +21,7 @@ program
   .option('-p, --password <password>', 'User password')
   .option('-o, --org <org>', 'Default Organization slug')
   .option('--supabase-url <url>', 'Supabase Project URL')
+  .option('--supabase-key <key>', 'Supabase Anon/Publishable API Key')
   .action(async (options) => {
     await loginCommand(options);
   });

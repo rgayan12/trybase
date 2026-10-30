@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { loadConfig, saveConfig } from '../config.js';
 
 export interface LoginOptions {
@@ -6,11 +8,60 @@ export interface LoginOptions {
   password?: string;
   org?: string;
   supabaseUrl?: string;
+  supabaseKey?: string;
+}
+
+const DEFAULT_SUPABASE_URL = 'https://tkcvtcmtckodjqickext.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_HU5aZRQ_x1lINP3H-LgAPg_SvUZi90g';
+
+function discoverLocalEnv(): { url?: string; key?: string } {
+  const candidateFiles = [
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), 'web/.env.local'),
+    path.resolve(process.cwd(), 'web/.env'),
+    path.resolve(process.cwd(), '../web/.env.local'),
+  ];
+
+  for (const filePath of candidateFiles) {
+    if (fs.existsSync(filePath)) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const urlMatch = content.match(/^(?:VITE_)?SUPABASE_URL=(.+)$/m);
+        const keyMatch = content.match(/^(?:VITE_)?SUPABASE_ANON_KEY=(.+)$/m);
+        if (urlMatch || keyMatch) {
+          return {
+            url: urlMatch ? urlMatch[1].trim() : undefined,
+            key: keyMatch ? keyMatch[1].trim() : undefined,
+          };
+        }
+      } catch {
+        // continue
+      }
+    }
+  }
+  return {};
 }
 
 export async function loginCommand(options: LoginOptions): Promise<void> {
   const config = loadConfig();
-  const supabaseUrl = options.supabaseUrl || process.env.SUPABASE_URL || config.supabaseUrl || 'https://auth.trybase.io';
+  const localEnv = discoverLocalEnv();
+
+  const supabaseUrl =
+    options.supabaseUrl ||
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    config.supabaseUrl ||
+    localEnv.url ||
+    DEFAULT_SUPABASE_URL;
+
+  const anonKey =
+    options.supabaseKey ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    config.supabaseKey ||
+    localEnv.key ||
+    DEFAULT_SUPABASE_ANON_KEY;
 
   // 1. Direct Session Token / JWT Login
   if (options.token) {
@@ -18,6 +69,7 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
       sessionToken: options.token,
       defaultOrg: options.org || config.defaultOrg,
       supabaseUrl,
+      supabaseKey: anonKey,
     });
     console.log(`✅ Authenticated with TryBase via Ephemeral Session Token.`);
     if (options.org) console.log(`   Default organization: "${options.org}"`);
@@ -29,7 +81,6 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
   if (options.email && options.password) {
     console.log(`🔐 Authenticating with Supabase Control Plane (${supabaseUrl})...`);
     try {
-      const anonKey = process.env.SUPABASE_ANON_KEY || 'public-anon-key';
       const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
@@ -55,6 +106,7 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
         userEmail: authData.user?.email || options.email,
         defaultOrg: options.org || config.defaultOrg,
         supabaseUrl,
+        supabaseKey: anonKey,
       });
 
       console.log(`✅ Successfully logged in as: ${authData.user?.email || options.email}`);

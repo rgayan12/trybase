@@ -68,13 +68,13 @@ const Auth = () => {
       padding: '2rem 1rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      
+
       {/* Brand Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img 
-          src="/logo.png" 
-          alt="TryBase Logo" 
-          style={{ height: '44px', width: 'auto', marginBottom: '1rem' }} 
+        <img
+          src="https://trybase.io/logo.png"
+          alt="TryBase Logo"
+          style={{ height: '44px', width: 'auto', marginBottom: '1rem' }}
         />
         <h1 style={{
           fontSize: '1.75rem',
@@ -90,8 +90,8 @@ const Auth = () => {
           color: '#64748b',
           margin: 0
         }}>
-          {isLogin 
-            ? 'Sign in to manage your autonomous AI agent fleet' 
+          {isLogin
+            ? 'Sign in to manage your autonomous AI agent fleet'
             : 'Create an administrator account for your private cluster'}
         </p>
       </div>
@@ -106,7 +106,7 @@ const Auth = () => {
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
         padding: '2rem'
       }}>
-        
+
         {error && (
           <div style={{
             padding: '0.75rem 1rem',
@@ -147,9 +147,9 @@ const Auth = () => {
               }}>
                 Full Name
               </label>
-              <input 
-                type="text" 
-                placeholder="Jane Doe" 
+              <input
+                type="text"
+                placeholder="Jane Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -178,9 +178,9 @@ const Auth = () => {
             }}>
               Email Address
             </label>
-            <input 
-              type="email" 
-              placeholder="admin@yourdomain.com" 
+            <input
+              type="email"
+              placeholder="admin@yourdomain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -208,9 +208,9 @@ const Auth = () => {
                 Password
               </label>
             </div>
-            <input 
-              type="password" 
-              placeholder="••••••••••••" 
+            <input
+              type="password"
+              placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -228,8 +228,8 @@ const Auth = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             style={{
               display: 'inline-flex',
@@ -265,7 +265,7 @@ const Auth = () => {
           color: '#64748b'
         }}>
           {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-          <button 
+          <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError(null);
@@ -295,8 +295,8 @@ const Auth = () => {
         fontSize: '0.85rem',
         color: '#64748b'
       }}>
-        <Link 
-          to="/docs" 
+        <Link
+          to="/docs"
           style={{
             display: 'inline-flex',
             alignItems: 'center',

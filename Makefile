@@ -1,7 +1,8 @@
-.PHONY: all control-plane infra web destroy cost sync clean test-provision help
+.PHONY: all check-env control-plane infra web destroy cost sync clean test-provision help
 
 help:
 	@echo "TryBase CLI Commands:"
+	@echo "  make check-env      Verify workstation dependencies (terraform, aws, docker, node, jq)"
 	@echo "  make control-plane  Deploy Supabase migrations & Edge Functions (Command 1/2)"
 	@echo "  make infra          Deploy AWS Fleet with Terraform (Command 2/2)"
 	@echo "  make web            Start the local React web dashboard (UI)"
@@ -12,6 +13,9 @@ help:
 	@echo "  make test-provision Test provisioning workloads (WORKLOAD=hello|n8n|dify|agent|all)"
 	@echo "  make clean-test-tenants Tear down ephemeral test tenants safely"
 	@echo "  make clean          Clean orphaned AWS Lambda ENIs"
+
+check-env:
+	@./check-env.sh
 
 control-plane:
 	@./deploy-control-plane.sh

@@ -47,8 +47,7 @@ sync:
 
 cli:
 	@echo "\n\033[1;36m🔨 Building & linking TryBase CLI (@trybase/cli)...\033[0m"
-	@npm --prefix packages/trybase-cli run build
-	@npm --prefix packages/trybase-cli link
+	@cd packages/trybase-cli && ([ -f node_modules/.bin/tsc ] || npm install) && npm run build && npm link
 	@echo "\n\033[1;32m✅ TryBase CLI is up to date and linked globally.\033[0m\n"
 
 test-provision:

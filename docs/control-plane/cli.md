@@ -12,7 +12,7 @@
 | `make check-env` | Verifies local dependencies (`terraform`, `aws`, `docker`, `jq`) | `make check-env` |
 | `make bootstrap` | Sets up remote S3 state bucket and DynamoDB state lock table | `make bootstrap` |
 | `make cost` | Runs Infracost pre-deploy cloud bill estimation | `make cost` |
-| `make deploy` | Applies Terraform configuration to stand up all cloud resources | `make deploy` |
+| `make infra` | Applies Terraform configuration to stand up all cloud resources | `make infra` |
 | `make control-plane` | Applies Supabase migrations and Edge orchestration functions | `make control-plane` |
 | `make sync-tenants` | Re-synchronizes active ECS tasks with database state | `make sync-tenants` |
 | `make test-provision`| Dispatches a test provisioning event for a workload archetype | `make test-provision WORKLOAD=agent` |

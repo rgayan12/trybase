@@ -77,10 +77,16 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
-# 6. Supabase CLI (Optional / Fallback to npx)
+# 6. Supabase CLI & Authentication
 if command -v supabase &> /dev/null; then
     SB_VER=$(supabase --version 2>&1 | head -n 1)
     echo -e " ${GREEN}[OK]${RESET} ${BOLD}supabase cli found:${RESET} v${SB_VER}"
+    if supabase projects list >/dev/null 2>&1; then
+        echo -e "      ${CYAN}↳ Supabase CLI is authenticated.${RESET}"
+    else
+        echo -e "      ${YELLOW}⚠️  Supabase CLI not logged in. Run 'supabase login' before 'make control-plane'.${RESET}"
+        WARNINGS=$((WARNINGS + 1))
+    fi
 else
     echo -e " ${YELLOW}[WARN]${RESET} ${BOLD}supabase cli:${RESET} Not installed globally (will fallback to 'npx supabase'). Install via 'brew install supabase/tap/supabase'"
     WARNINGS=$((WARNINGS + 1))

@@ -116,7 +116,7 @@ All common infrastructure tasks are exposed through unified Make targets:
 | `make check-env` | Verifies local dependencies (`terraform`, `aws`, `docker`, `jq`) |
 | `make bootstrap` | Sets up remote S3 state bucket and DynamoDB lock table |
 | `make cost` | Runs Infracost pre-deploy cost estimation |
-| `make deploy` | Applies Terraform to stand up the cloud fleet |
+| `make infra` | Applies Terraform to stand up the cloud fleet |
 | `make control-plane` | Applies database migrations and edge orchestration functions |
 | `make sync-tenants` | Re-synchronizes active ECS tasks with database state |
 | `make destroy` | Tears down cloud resources with automatic ENI cleanup |

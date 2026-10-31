@@ -256,7 +256,7 @@ While Kubernetes is powerful for microservice meshes, running multi-tenant isola
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured (`aws configure`).
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.8.0.
 - [Docker](https://www.docker.com/) running locally (for initial Lambda image push).
-- A domain with a **Wildcard SSL Certificate** in AWS Certificate Manager (e.g. `*.n8n.yourdomain.com`).
+- A domain with a **Wildcard SSL Certificate** in AWS Certificate Manager (e.g. `*.apps.yourdomain.com` or `*.trybase.io`).
 
 ## ⚡ Deploy in 2 Commands
 
@@ -301,7 +301,7 @@ In your DNS provider (Hostinger, Cloudflare, GoDaddy, Namecheap):
 Add a single **Wildcard CNAME**:
 | Record Type | Host / Name | Target / Points To |
 | :--- | :--- | :--- |
-| **CNAME** | `*.n8n` *(or `*` if using apex)* | `<alb_dns_name>` |
+| **CNAME** | `*.apps` *(or `*` if using apex)* | `<alb_dns_name>` |
 
 ---
 
@@ -337,7 +337,7 @@ curl -X POST "https://<API_GATEWAY_URL>/provision" \
 1. API Gateway validates the JWT with the ES256 Lambda Authorizer.
 2. Step Functions triggers the `n8n-tenant-create-schema` Lambda to create Postgres schema `acme_corp`.
 3. CodeBuild pulls the Terraform source archive from S3, generates `tenant_acme-corp.tf`, and runs `terraform apply -target=module.acme_corp`.
-4. The ALB automatically begins routing `https://acme.n8n.yourdomain.com` to the new Fargate container.
+4. The ALB automatically begins routing `https://acme.apps.yourdomain.com` to the new Fargate container.
 
 ---
 

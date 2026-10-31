@@ -58,16 +58,16 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "TryBase <hello@trybase.io>",
           to: [userEmail],
-          subject: "Your n8n engine is purring! 🚀",
+          subject: "Your TryBase workload is live! 🚀",
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
               <h2 style="color: #3b82f6;">Hi ${userName},</h2>
               <p style="font-size: 16px; line-height: 1.5; color: #333;">
-                Exciting news! Your dedicated n8n workspace is now fully provisioned and ready for action on AWS.
+                Exciting news! Your dedicated workload is now fully provisioned and ready for action on AWS.
               </p>
               <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0; font-weight: bold;">Workspace URL:</p>
-                <a href="https://${tenant_id}.n8n.trybase.io" style="color: #3b82f6; text-decoration: none; font-size: 18px;">https://${tenant_id}.n8n.trybase.io</a>
+                <a href="https://${tenant_id}.trybase.io" style="color: #3b82f6; text-decoration: none; font-size: 18px;">https://${tenant_id}.trybase.io</a>
               </div>
               <p style="font-size: 14px; color: #666;">
                 Need help? Just reply to this email and our team will jump in.

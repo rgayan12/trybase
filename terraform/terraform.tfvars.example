@@ -11,8 +11,8 @@ environment  = "prod"
 
 # Domain & SSL (ACM) Configuration
 # You must request a wildcard SSL certificate in AWS Certificate Manager for your domain
-# (e.g. *.n8n.yourdomain.com) in your target region before applying.
-base_domain         = "n8n.yourdomain.com"
+# (e.g. *.apps.yourdomain.com or *.yourdomain.com) in your target region before applying.
+base_domain         = "apps.yourdomain.com"
 acm_certificate_arn = "arn:aws:acm:eu-west-2:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 # Terraform Remote State S3 Bucket

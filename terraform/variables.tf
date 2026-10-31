@@ -20,13 +20,13 @@ variable "environment" {
 }
 
 variable "base_domain" {
-  description = "Wildcard root domain for tenant routing (e.g. n8n.trybase.io or n8n.yourdomain.com)"
+  description = "Wildcard root domain for tenant routing (e.g. apps.yourdomain.com or trybase.io)"
   type        = string
-  default     = "n8n.trybase.io"
+  default     = "trybase.io"
 }
 
 variable "acm_certificate_arn" {
-  description = "ARN of the AWS ACM SSL certificate for *.n8n.yourdomain.com (required for HTTPS ALB listener)"
+  description = "ARN of the AWS ACM SSL certificate for *.apps.yourdomain.com (required for HTTPS ALB listener)"
   type        = string
   default     = "arn:aws:acm:eu-west-2:656876168893:certificate/cccdf28e-f81f-46cd-bff4-d17f9916fe5f"
 }

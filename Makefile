@@ -1,8 +1,9 @@
-.PHONY: all check-env control-plane infra web destroy cost sync clean test-provision help
+.PHONY: all check-env bootstrap control-plane infra deploy web destroy cost sync clean test-provision help
 
 help:
 	@echo "TryBase CLI Commands:"
 	@echo "  make check-env      Verify workstation dependencies (terraform, aws, docker, node, jq)"
+	@echo "  make bootstrap      Provision S3 & DynamoDB remote state backend"
 	@echo "  make control-plane  Deploy Supabase migrations & Edge Functions (Command 1/2)"
 	@echo "  make infra          Deploy AWS Fleet with Terraform (Command 2/2)"
 	@echo "  make web            Start the local React web dashboard (UI)"
@@ -17,15 +18,24 @@ help:
 check-env:
 	@./check-env.sh
 
+bootstrap:
+	@echo "\n\033[1;36m🚀 Bootstrapping Terraform Remote State Backend (S3 & DynamoDB)...\033[0m"
+	@cd terraform/setup-backend && terraform init && terraform apply -auto-approve
+	@echo "\n\033[1;32m✅ Remote state backend is ready.\033[0m\n"
+
 control-plane:
-	@./deploy-control-plane.sh
+	@./deploy-control-plane.sh $(REF)$(URL)
 
 infra:
 	@./deploy-infra.sh
 
+deploy: infra
+
 web:
-	@echo "Starting TryBase Web Dashboard..."
-	@cd web && npm install && npm run dev
+	@echo "\n\033[1;36m🚀 Starting TryBase Web Dashboard...\033[0m"
+	@echo "  ➜ Local Console: \033[1;32mhttp://localhost:5173/\033[0m"
+	@echo "  ➜ Documentation: \033[1;32mhttp://localhost:5173/docs\033[0m\n"
+	@cd web && ([ -d node_modules ] || npm install) && npm run dev
 
 destroy:
 	@./destroy-infra.sh

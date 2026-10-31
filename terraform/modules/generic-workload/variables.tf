@@ -11,9 +11,9 @@ variable "subdomain" {
 }
 
 variable "domain_name" {
-  description = "Base domain for the service (e.g. n8n.trybase.io or yourdomain.com)."
+  description = "Base domain for the service (e.g. trybase.io or yourdomain.com)."
   type        = string
-  default     = "n8n.trybase.io"
+  default     = "trybase.io"
 }
 
 variable "container_image" {

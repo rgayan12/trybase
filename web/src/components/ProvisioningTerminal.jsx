@@ -11,8 +11,8 @@ const MESSAGES = [
   "Downloading more RAM... (Just kidding, we have plenty)",
   "Applying security group ingress rules...",
   "Verifying health check endpoints...",
-  "Polishing your dedicated n8n dashboard...",
-  "Optimizing workflow execution engine...",
+  "Polishing your dedicated workspace dashboard...",
+  "Optimizing runtime execution engine...",
   "Injecting secret credentials...",
   "Almost there! Infrastructure is spinning up in the background...",
   "Bribing the local AWS region to hurry up...",
@@ -209,10 +209,10 @@ const ProvisioningTerminal = ({ status, tenantId, startedAt, finishedAt, onTrigg
           }}>
              <h3 style={{ margin: '0 0 1rem 0', color: '#10b981' }}>Instance is Ready!</h3>
              <p className="text-secondary" style={{ marginBottom: '1.5rem' }}>
-               Your dedicated n8n workspace is live at:
+               Your dedicated workspace is live at:
              </p>
              <a 
-               href={`https://${tenantId}.n8n.trybase.io`} 
+               href={`https://${tenantId}.trybase.io`} 
                target="_blank" 
                rel="noopener noreferrer"
                className="btn btn-primary"

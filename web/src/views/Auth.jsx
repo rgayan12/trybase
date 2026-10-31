@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, ArrowRight, BookOpen } from 'lucide-react';
+import { Loader2, ArrowRight, BookOpen, Info, ExternalLink, Sparkles } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
@@ -14,6 +14,12 @@ const Auth = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const navigate = useNavigate();
+
+  const hasSupabaseConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && 
+    import.meta.env.VITE_SUPABASE_ANON_KEY &&
+    !import.meta.env.VITE_SUPABASE_URL.includes('your-project')
+  );
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -65,12 +71,84 @@ const Auth = () => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '2rem 1rem',
+      padding: '5rem 1rem 2rem 1rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
 
+      {/* Top Navigation Bar */}
+      <header style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '60px',
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid #e2e8f0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 1.5rem',
+        zIndex: 50
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <img
+            src="https://trybase.io/logo.png"
+            alt="TryBase Logo"
+            style={{ height: '28px', width: 'auto' }}
+          />
+          <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#0f172a', letterSpacing: '-0.02em' }}>
+            TryBase
+          </span>
+          <span style={{ fontSize: '0.72rem', backgroundColor: '#f1f5f9', color: '#475569', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+            v1.0.0
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <Link
+            to="/docs/getting-started"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: '#0f172a',
+              textDecoration: 'none',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '6px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <BookOpen size={15} color="#2563eb" />
+            <span>Documentation</span>
+          </Link>
+
+          <a
+            href="https://github.com/rgayan12/trybase"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: '#475569',
+              textDecoration: 'none',
+              padding: '0.45rem 0.65rem'
+            }}
+          >
+            <span>GitHub</span>
+            <ExternalLink size={13} />
+          </a>
+        </div>
+      </header>
+
       {/* Brand Header */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
         <img
           src="https://trybase.io/logo.png"
           alt="TryBase Logo"
@@ -99,13 +177,70 @@ const Auth = () => {
       {/* Auth Card */}
       <div style={{
         width: '100%',
-        maxWidth: '420px',
+        maxWidth: '440px',
         backgroundColor: '#ffffff',
         borderRadius: '12px',
         border: '1px solid #e2e8f0',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
         padding: '2rem'
       }}>
+
+        {/* First-Time Setup Callout when Supabase is not yet configured */}
+        {!hasSupabaseConfig && (
+          <div style={{
+            padding: '1rem 1.1rem',
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '8px',
+            marginBottom: '1.5rem',
+            fontSize: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, marginBottom: '0.35rem', color: '#1e40af' }}>
+              <Info size={16} />
+              <span>First-time setup detected</span>
+            </div>
+            <p style={{ margin: '0 0 0.85rem 0', color: '#1e3a8a', lineHeight: 1.45, fontSize: '0.82rem' }}>
+              You don't need Supabase keys to read the docs! The entire documentation suite is available offline locally.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <Link
+                to="/docs/getting-started"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem 0.85rem',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  textDecoration: 'none'
+                }}
+              >
+                <BookOpen size={14} /> Open Getting Started Guide →
+              </Link>
+              <Link
+                to="/docs"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem 0.85rem',
+                  backgroundColor: '#ffffff',
+                  color: '#1e40af',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  textDecoration: 'none'
+                }}
+              >
+                All Docs
+              </Link>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div style={{

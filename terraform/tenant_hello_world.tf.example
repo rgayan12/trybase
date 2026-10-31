@@ -10,7 +10,7 @@
 # 2. Deploy this service:
 #      terraform apply -target=module.hello_world
 # 3. Visit:
-#      https://hello.<your-base-domain> (e.g. https://hello.n8n.yourdomain.com)
+#      https://hello.<your-base-domain> (e.g. https://hello.yourdomain.com)
 # ==============================================================================
 
 module "hello_world" {

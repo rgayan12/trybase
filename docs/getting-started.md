@@ -96,7 +96,7 @@ OVERALL TOTAL:                      ~$280.00 / mo baseline (Multi-AZ)
 Once satisfied with the cost forecast, execute the automated infrastructure deployment:
 
 ```bash
-make deploy
+make infra
 ```
 
 This target performs the following operations:

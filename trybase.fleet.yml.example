@@ -18,12 +18,12 @@ workloads:
   # 1. Workflow Automation Engine (n8n)
   - name: workflow
     archetype: n8n
-    subdomain: n8n.acme.trybase.dev
+    subdomain: workflow.acme.trybase.dev
     cpu: 1024
     memory: 2048
     secrets:
       N8N_BASIC_AUTH_ACTIVE: "true"
-      WEBHOOK_URL: "https://n8n.acme.trybase.dev/"
+      WEBHOOK_URL: "https://workflow.acme.trybase.dev/"
 
   # 2. Knowledge & Prompt Studio (Dify)
   - name: knowledge

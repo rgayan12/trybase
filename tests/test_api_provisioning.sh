@@ -44,13 +44,13 @@ SFN_ARN=$(aws stepfunctions list-state-machines --region "$REGION" \
 
 if [ -z "$SFN_ARN" ] || [ "$SFN_ARN" == "None" ]; then
     echo -e "${RED}❌ Could not locate the TryBase provisioning Step Function in region ${REGION}.${RESET}"
-    echo -e "Make sure you have deployed base infrastructure using 'make deploy'."
+    echo -e "Make sure you have deployed base infrastructure using 'make infra'."
     exit 1
 fi
 echo -e "✓ Found State Machine: ${CYAN}${SFN_ARN}${RESET}\n"
 
 # 3. Determine base domain from terraform if available
-BASE_DOMAIN="n8n.trybase.io"
+BASE_DOMAIN="trybase.io"
 if [ -f "terraform/terraform.tfvars" ]; then
     EXTRACTED_DOMAIN=$(grep 'base_domain' terraform/terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "' || true)
     if [ -n "$EXTRACTED_DOMAIN" ]; then

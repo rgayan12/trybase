@@ -209,7 +209,7 @@ export const TOOLS = [
             type: 'object',
             properties: {
               name: { type: 'string', description: 'Workload name (e.g. workflow, knowledge, runner)' },
-              subdomain: { type: 'string', description: 'Subdomain for ingress (e.g. n8n.acme.trybase.io)' },
+              subdomain: { type: 'string', description: 'Subdomain for ingress (e.g. app.acme.trybase.io)' },
               archetype: {
                 type: 'string',
                 enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'openmuse', 'bedrock-agent', 'dify', 'custom'],

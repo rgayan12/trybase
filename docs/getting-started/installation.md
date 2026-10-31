@@ -92,4 +92,23 @@ aws sts get-caller-identity
 
 ---
 
+## 4. Supabase Control Plane Setup (Free)
+
+TryBase uses Supabase for user authentication, organization management, and tenant control plane tracking:
+
+1. Create a free account at [supabase.com](https://supabase.com) and click **New Project**.
+2. Set your **Project Name** (e.g. `trybase-control-plane`), enter a secure **Database Password**, and select your closest AWS region.
+3. Note your **Project Reference ID** from your project's dashboard URL:
+   ```text
+   https://supabase.com/dashboard/project/abcdefghijklmnopqrst
+                                          └── PROJECT REF ──┘
+   ```
+4. Deploy the database schema and Edge Functions:
+   ```bash
+   make control-plane
+   ```
+   *When prompted, paste your 20-character **Project Reference ID** and enter your database password. TryBase will automatically push all database migrations and deploy provisioning edge functions.*
+
+---
+
 [Next: Environment Configuration →](./configuration.md)

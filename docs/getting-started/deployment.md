@@ -19,17 +19,20 @@ This ensures that team members cannot execute concurrent conflicting deployments
 
 ## 2. One-Command Fleet Deployment
 
+> [!IMPORTANT]
+> Ensure you have configured your `base_domain` and wildcard `acm_certificate_arn` in `terraform/terraform.tfvars` before deploying. See the [ACM Wildcard SSL Certificate Guide](./configuration.md#2-generating-an-aws-acm-wildcard-ssl-certificate) for step-by-step instructions.
+
 Execute the automated fleet deployment:
 
 ```bash
-make deploy
+make infra
 ```
 
 This target runs `deploy-infra.sh`, executing the following pipeline:
 
 ```mermaid
 graph TD
-    A[make deploy] --> B[Initialize Terraform & Validate Modules]
+    A[make infra] --> B[Initialize Terraform & Validate Modules]
     B --> C[Provision Multi-AZ VPC & NAT Gateways]
     C --> D[Stand up Graviton RDS PostgreSQL 16.3 + pgvector]
     D --> E[Configure Shared Application Load Balancer & ACM Wildcard]

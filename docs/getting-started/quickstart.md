@@ -60,6 +60,29 @@ Response (`200 OK`):
 
 ---
 
+## Method C: Deploy Declarative IaaS Fleet (`trybase.fleet.yml`)
+
+For teams orchestrating multi-workload AI platforms (such as n8n workflows, Dify knowledge engines, and OpenClaw agents), TryBase provides a declarative Infrastructure-as-a-Service (IaaS) workflow:
+
+1. **Copy the example fleet manifest**:
+   ```bash
+   cp trybase.fleet.yml.example trybase.fleet.yml
+   ```
+
+2. **Preview planned resource allocations**:
+   ```bash
+   trybase fleet deploy trybase.fleet.yml --dry-run
+   ```
+
+3. **Deploy the fleet**:
+   ```bash
+   trybase fleet deploy trybase.fleet.yml
+   ```
+
+AWS Step Functions orchestrates the entire cluster concurrently—launching Fargate MicroVMs, provisioning isolated PostgreSQL schemas, configuring ALB listener rules, and storing encrypted secrets in AWS Secrets Manager.
+
+---
+
 ## 3. Verify Live Workload
 
 Once Step Functions completes health verification, test the live agent endpoint:

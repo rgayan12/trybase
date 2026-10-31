@@ -190,4 +190,85 @@ VITE_API_GATEWAY_URL=https://pweai7qxlh.execute-api.eu-west-2.amazonaws.com/prov
 
 ---
 
+## 4. Declarative IaaS Configuration (`trybase.fleet.yml`)
+
+TryBase treats workload provisioning as declarative **Infrastructure-as-a-Service (IaaS)**. Instead of manually clicking through cloud dashboards or configuring disparate provisioning APIs, teams define their desired multi-workload infrastructure in a version-controlled YAML manifest (`trybase.fleet.yml`).
+
+### The IaaS Concept in TryBase
+
+When users, client applications, or AI agents request infrastructure, they submit this manifest declaring:
+- **Organization Namespace**: Groups related workloads under a common enterprise domain and database cluster (e.g. `organization: acme-corp`).
+- **Workload Archetypes**: Pre-configured runtime environments including `n8n` (workflow automation), `dify` (AI studio/RAG), `openclaw` (autonomous Bedrock agent runner), `openmuse` (agent computer/browser sandbox), `laravel`, `django`, or `custom` Docker images.
+- **Compute Sizing**: Explicit CPU (`256`, `512`, `1024`, `2048`) and RAM (`512`, `1024`, `2048`, `4096` MiB) allocations per MicroVM.
+- **ALB Ingress & Subdomains**: Dedicated HTTPS subdomains routed automatically through your wildcard ACM certificate.
+- **Anti-Leak Secrets**: Environment variables encrypted directly into AWS Secrets Manager and served over Unix Domain Sockets (`/var/run/trybase/secrets.sock`), preventing plaintext `.env` leakage.
+
+### Example Manifest (`trybase.fleet.yml`)
+
+```yaml
+organization: acme-corp
+version: "1.0"
+
+workloads:
+  # 1. Workflow Automation Engine
+  - name: workflow
+    archetype: n8n
+    subdomain: workflow.acme.apps.yourdomain.com
+    cpu: 1024
+    memory: 2048
+    secrets:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+
+  # 2. Knowledge & AI Studio
+  - name: knowledge
+    archetype: dify
+    subdomain: dify.acme.apps.yourdomain.com
+    cpu: 1024
+    memory: 2048
+    secrets:
+      MODE: "api"
+      VECTOR_STORE: "pgvector"
+
+  # 3. Autonomous Execution Runner
+  - name: runner
+    archetype: openclaw
+    subdomain: agent.acme.apps.yourdomain.com
+    cpu: 1024
+    memory: 2048
+    secrets:
+      WORKSPACE_DIR: "/workspace"
+      ENABLE_ANTI_LEAK: "true"
+```
+
+### How Users & Teams Request IaaS
+
+Users can request infrastructure provisioning using three primary methods:
+
+1. **TryBase CLI** (Recommended for developers & GitOps CI/CD):
+   ```bash
+   # Validate manifest syntax and resource allocations
+   trybase fleet deploy trybase.fleet.yml --dry-run
+
+   # Deploy the entire interconnected IaaS topology
+   trybase fleet deploy trybase.fleet.yml
+   ```
+
+2. **AI Assistants via MCP Server** (Claude Desktop, Cursor, Windsurf):
+   Because `@trybase/mcp` exposes the `trybase_deploy_fleet` tool, you can simply ask your AI assistant:
+   > *"Deploy our fleet infrastructure using trybase.fleet.yml and verify container health."*
+
+3. **HTTP REST API** (For SaaS control planes or automated tenant onboarding):
+   ```bash
+   curl -X POST "https://<API_GATEWAY_URL>/provision/fleet" \
+     -H "Authorization: Bearer <JWT_TOKEN>" \
+     -H "Content-Type: application/json" \
+     --data-binary @trybase.fleet.json
+   ```
+
+> [!TIP]
+> For the complete schema specification, CPU/RAM sizing matrices, and advanced options, refer to the [Declarative Fleet Manifest Reference](../control-plane/fleet-manifest.md).
+
+---
+
 [Next: Pre-Deploy FinOps Audit →](./finops-audit.md)
+

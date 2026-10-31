@@ -44,6 +44,7 @@
 * [Scale-to-Zero Architecture](finops/scale-to-zero.md)
 
 ### Operations & Control Plane
+* [Declarative Fleet Manifests (trybase.fleet.yml)](control-plane/fleet-manifest.md)
 * [Provisioning REST API](control-plane/api.md)
 * [AWS Step Functions Orchestrator](control-plane/step-functions.md)
 * [Database Schema & Realtime State](control-plane/database.md)

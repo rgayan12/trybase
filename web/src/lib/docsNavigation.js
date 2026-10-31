@@ -66,6 +66,7 @@ export const DOCS_NAV = [
   {
     group: 'Operations & Control Plane',
     items: [
+      { id: 'control-plane/fleet-manifest', title: 'Declarative Fleet Manifests', path: 'control-plane/fleet-manifest.md', icon: Layers },
       { id: 'control-plane/api', title: 'Provisioning REST API', path: 'control-plane/api.md', icon: Server },
       { id: 'control-plane/step-functions', title: 'Step Functions Orchestrator', path: 'control-plane/step-functions.md', icon: Layers },
       { id: 'control-plane/database', title: 'Database Schema & Realtime', path: 'control-plane/database.md', icon: Database },

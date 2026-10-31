@@ -51,15 +51,32 @@ brew install terraform awscli docker infracost node jq
 
 ## 3. AWS Account Permissions
 
-TryBase provisions core AWS infrastructure and requires an IAM identity with permissions for:
-* **Amazon VPC**: VPCs, subnets, route tables, internet gateways, NAT gateways, security groups.
-* **Amazon ECS**: ECS clusters, task definitions, Fargate services.
-* **Amazon RDS**: DB instances, subnet groups, parameter groups.
-* **Elastic Load Balancing**: Application Load Balancers, target groups, HTTPS listener rules.
+TryBase provisions an interconnected cloud fleet and requires an IAM identity with permissions for:
+
+### Compute & Orchestration
+* **Amazon ECS**: ECS clusters, task definitions, and Fargate services.
+* **AWS Step Functions**: State machines and asynchronous tenant provisioning pipelines.
+* **AWS Lambda**: API Gateway token authorizers, database schema creation, and success notifications.
+* **AWS CodeBuild**: Automated Terraform execution environment invoked by Step Functions.
+* **Amazon ECR (Elastic Container Registry)**: Workload container images and Lambda build artifacts.
+
+### Networking & Ingress
+* **Amazon VPC**: VPCs, subnets, route tables, internet gateways, NAT gateways, and security groups.
+* **Elastic Load Balancing (ALB)**: Application Load Balancers, target groups, and SNI/subdomain HTTPS routing rules.
 * **AWS Certificate Manager (ACM)**: Wildcard SSL/TLS certificates.
-* **AWS IAM**: Roles, policies, STS assume role permissions.
-* **AWS Step Functions**: State machines, executions.
-* **Amazon API Gateway**: REST APIs, integrations, deployments.
+* **Amazon EC2**: Elastic Network Interfaces (ENIs), Elastic IPs, and optional bastion host.
+
+### State, Storage & Database
+* **Amazon RDS**: Shared PostgreSQL instance, subnet groups, and parameter groups.
+* **Amazon S3**: Remote Terraform state backend (`terraform.tfstate`), CodeBuild source bundles, and state sync.
+* **Amazon DynamoDB**: Distributed state locking table preventing concurrent Terraform execution conflicts.
+* **AWS Secrets Manager**: Anti-Leak secret storage (`trybase/tenants/<id>/secrets`) and master credentials.
+
+### Observability, Security & AI
+* **AWS IAM & STS**: Roles, execution policies, and temporary session credential rotation.
+* **Amazon CloudWatch & Logs**: Container stdout/stderr streams, Step Function audit trails, and alarms.
+* **Amazon API Gateway**: REST APIs, custom Lambda authorizers, and stage deployments.
+* **Amazon Bedrock (Optional)**: Task execution role permissions for autonomous AI agent inference.
 
 Authenticate your AWS CLI session:
 

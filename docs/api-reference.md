@@ -107,16 +107,18 @@ create policy "Users can view and manage their own workspaces"
 
 ---
 
-## Makefile Cheatsheet
+## TryBase CLI & Make Cheatsheet
 
-All common infrastructure tasks are exposed through unified Make targets:
+All common infrastructure tasks are exposed through the unified `trybase` CLI (with standard `make` aliases):
 
-| Command | Description |
-| :--- | :--- |
-| `make check-env` | Verifies local dependencies (`terraform`, `aws`, `docker`, `jq`) |
-| `make bootstrap` | Sets up remote S3 state bucket and DynamoDB lock table |
-| `make cost` | Runs Infracost pre-deploy cost estimation |
-| `make infra` | Applies Terraform to stand up the cloud fleet |
-| `make control-plane` | Applies database migrations and edge orchestration functions |
-| `make sync-tenants` | Re-synchronizes active ECS tasks with database state |
-| `make destroy` | Tears down cloud resources with automatic ENI cleanup |
+| TryBase Command | Make Alias | Description |
+| :--- | :--- | :--- |
+| `trybase doctor` | `make doctor` / `make check-env` | Verifies workstation tools (`terraform`, `aws`, `docker`, `node`, `supabase`) |
+| `trybase bootstrap` | `make bootstrap` | Sets up remote S3 state bucket and DynamoDB lock table |
+| `trybase control-plane` | `make control-plane` | Applies database migrations, Edge Functions, and syncs ES256 JWKS |
+| `trybase infra` | `make infra` | Applies Terraform to stand up the AWS cloud fleet |
+| `trybase up` | `make up` / `make all` | One-shot full deployment: Control Plane + AWS Fleet |
+| `trybase web` | `make web` | Starts local web console and offline documentation (`localhost:5173`) |
+| `trybase cost` | `make cost` | Runs Infracost pre-deploy cost estimation |
+| `trybase sync` | `make sync` | Re-synchronizes active ECS tasks with database state |
+| `trybase destroy` | `make destroy` | Tears down cloud resources with automatic ENI cleanup |

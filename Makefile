@@ -1,60 +1,55 @@
-.PHONY: all check-env bootstrap control-plane infra deploy web destroy cost sync clean test-provision help
+.PHONY: all doctor check-env bootstrap control-plane infra deploy up web destroy cost sync clean test-provision help
 
 help:
-	@echo "TryBase CLI Commands:"
-	@echo "  make check-env      Verify workstation dependencies (terraform, aws, docker, node, jq)"
-	@echo "  make bootstrap      Provision S3 & DynamoDB remote state backend"
-	@echo "  make control-plane  Deploy Supabase migrations & Edge Functions (Command 1/2)"
-	@echo "  make infra          Deploy AWS Fleet with Terraform (Command 2/2)"
-	@echo "  make web            Start the local React web dashboard (UI)"
-	@echo "  make cost           Forecast cloud infrastructure costs with Infracost"
-	@echo "  make destroy        Tear down AWS Fleet infrastructure cleanly"
-	@echo "  make all            Deploy both Control Plane and AWS Fleet"
-	@echo "  make sync           Sync remote tenant state from S3 to local Git"
-	@echo "  make test-provision Test provisioning workloads (WORKLOAD=hello|n8n|dify|agent|all)"
-	@echo "  make clean-test-tenants Tear down ephemeral test tenants safely"
-	@echo "  make clean          Clean orphaned AWS Lambda ENIs"
+	@echo "TryBase Unified CLI & Make Commands:"
+	@echo "  trybase doctor        (or make doctor)        Verify workstation dependencies"
+	@echo "  trybase bootstrap     (or make bootstrap)     Provision S3 & DynamoDB remote state backend"
+	@echo "  trybase control-plane (or make control-plane) Deploy Supabase migrations & Edge Functions"
+	@echo "  trybase infra         (or make infra)         Deploy AWS Fleet with Terraform"
+	@echo "  trybase up            (or make up)            One-shot deploy: Control Plane + AWS Fleet"
+	@echo "  trybase web           (or make web)           Start the local React web dashboard & docs"
+	@echo "  trybase cost          (or make cost)          Forecast cloud infrastructure spend with Infracost"
+	@echo "  trybase destroy       (or make destroy)       Tear down AWS Fleet infrastructure cleanly"
+	@echo "  trybase sync          (or make sync)          Sync remote tenant state from S3 to local Git"
 
-check-env:
-	@./check-env.sh
+doctor:
+	@command -v trybase >/dev/null 2>&1 && trybase doctor || ./check-env.sh
+
+check-env: doctor
 
 bootstrap:
-	@echo "\n\033[1;36m🚀 Bootstrapping Terraform Remote State Backend (S3 & DynamoDB)...\033[0m"
-	@cd terraform/setup-backend && terraform init && terraform apply -auto-approve
-	@echo "\n\033[1;32m✅ Remote state backend is ready.\033[0m\n"
+	@command -v trybase >/dev/null 2>&1 && trybase bootstrap || (cd terraform/setup-backend && terraform init && terraform apply -auto-approve)
 
 control-plane:
-	@./deploy-control-plane.sh $(REF)$(URL)
+	@command -v trybase >/dev/null 2>&1 && trybase control-plane $(REF)$(URL) || ./deploy-control-plane.sh $(REF)$(URL)
 
 infra:
-	@./deploy-infra.sh
+	@command -v trybase >/dev/null 2>&1 && trybase infra || ./deploy-infra.sh
 
 deploy: infra
 
+up:
+	@command -v trybase >/dev/null 2>&1 && trybase up || (./deploy-control-plane.sh && ./deploy-infra.sh)
+
+all: up
+
 web:
-	@echo "\n\033[1;36m🚀 Starting TryBase Web Dashboard...\033[0m"
-	@echo "  ➜ Local Console: \033[1;32mhttp://localhost:5173/\033[0m"
-	@echo "  ➜ Documentation: \033[1;32mhttp://localhost:5173/docs\033[0m\n"
-	@cd web && ([ -d node_modules ] || npm install) && npm run dev
+	@command -v trybase >/dev/null 2>&1 && trybase web || (cd web && ([ -d node_modules ] || npm install) && npm run dev)
 
 destroy:
-	@./destroy-infra.sh
+	@command -v trybase >/dev/null 2>&1 && trybase destroy || ./destroy-infra.sh
 
 cost:
-	@if command -v infracost >/dev/null 2>&1; then \
-		infracost breakdown --path terraform/; \
-	else \
-		echo "\n\033[1;33m⚠️  Infracost is not installed.\033[0m"; \
-		echo "Install Infracost (Apache 2.0) to forecast exact cloud costs:"; \
-		echo "  brew install infracost   (macOS)"; \
-		echo "  curl -fsSL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh  (Linux)"; \
-		echo "Then run: 'infracost auth login' and retry 'make cost'.\n"; \
-	fi
-
-all: control-plane infra
+	@command -v trybase >/dev/null 2>&1 && trybase cost || (infracost breakdown --path terraform/)
 
 sync:
-	@./sync-tenants.sh
+	@command -v trybase >/dev/null 2>&1 && trybase sync || ./sync-tenants.sh
+
+cli:
+	@echo "\n\033[1;36m🔨 Building & linking TryBase CLI (@trybase/cli)...\033[0m"
+	@npm --prefix packages/trybase-cli run build
+	@npm --prefix packages/trybase-cli link
+	@echo "\n\033[1;32m✅ TryBase CLI is up to date and linked globally.\033[0m\n"
 
 test-provision:
 	@./tests/test_api_provisioning.sh $(WORKLOAD)

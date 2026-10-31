@@ -258,32 +258,50 @@ While Kubernetes is powerful for microservice meshes, running multi-tenant isola
 - [Docker](https://www.docker.com/) running locally (for initial Lambda image push).
 - A domain with a **Wildcard SSL Certificate** in AWS Certificate Manager (e.g. `*.apps.yourdomain.com` or `*.trybase.io`).
 
-## ⚡ Deploy in 2 Commands
+## ⚡ Deploy with the TryBase CLI
 
-TryBase is engineered for maximum developer velocity. Bootstrapping the entire multi-tenant platform (Supabase Control Plane + AWS Fleet Infrastructure) takes just **2 CLI commands**:
+TryBase is engineered for maximum developer velocity. Bootstrapping the entire multi-tenant platform (Supabase Control Plane + AWS Fleet Infrastructure) is unified under the **`trybase`** CLI:
 
 ```bash
 git clone https://github.com/your-username/trybase.git
 cd trybase
+make cli   # (or npm install -g @trybase/cli)
 ```
 
-### 1️⃣ Command 1: Deploy the Control Plane (Supabase)
+Verify your environment with `trybase doctor`:
 ```bash
-./deploy-control-plane.sh
-# or: make control-plane
+trybase doctor
 ```
-**What this does automatically:**
-- Links to your Supabase project (prompts for your Project Ref if needed).
-- Pushes database migrations (creates `workspaces` table with Row-Level Security).
-- Deploys the 3 Edge Functions (`on-provision-success`, `verify-checkout`, `create-portal-session`).
-- Automatically updates `terraform/terraform.tfvars` with your Supabase URL and settings.
 
 ---
 
-### 2️⃣ Command 2: Deploy the Fleet Infrastructure (AWS)
+### 1️⃣ Bootstrap Remote State (S3 & DynamoDB)
 ```bash
-./deploy-infra.sh
+trybase bootstrap
+# or: make bootstrap
+```
+*Creates the remote S3 state bucket and DynamoDB locking table in AWS.*
+
+---
+
+### 2️⃣ Deploy the Control Plane (Supabase)
+```bash
+trybase control-plane
+# or: make control-plane
+```
+**What this does automatically:**
+- Links to your Supabase project (prompts for your Project Ref or URL if needed).
+- Pushes database migrations (creates `workspaces` table with Row-Level Security).
+- Deploys the 3 Edge Functions (`on-provision-success`, `verify-checkout`, `create-portal-session`).
+- Automatically extracts ES256 JWKS public keys and updates `terraform/terraform.tfvars`.
+
+---
+
+### 3️⃣ Deploy the Fleet Infrastructure (AWS)
+```bash
+trybase infra
 # or: make infra
+# (Tip: you can deploy both steps in one shot with: trybase up)
 ```
 **What this does automatically:**
 - Verifies your AWS credentials and Terraform installation.
@@ -292,12 +310,12 @@ cd trybase
 
 ---
 
-### 3️⃣ Point Your Wildcard Domain (Final Step)
-Once `./deploy-infra.sh` finishes, it outputs `alb_dns_name`:
+### 4️⃣ Point Your Wildcard Domain
+Once `trybase infra` finishes, it outputs `alb_dns_name`:
 ```text
-alb_dns_name = "n8n-hosting-shared-alb-123456789.eu-west-2.elb.amazonaws.com"
+alb_dns_name = "trybase-alb-123456789.eu-west-2.elb.amazonaws.com"
 ```
-In your DNS provider (Hostinger, Cloudflare, GoDaddy, Namecheap):
+In your DNS provider (Cloudflare, Route 53, GoDaddy, Namecheap):
 Add a single **Wildcard CNAME**:
 | Record Type | Host / Name | Target / Points To |
 | :--- | :--- | :--- |
@@ -305,11 +323,12 @@ Add a single **Wildcard CNAME**:
 
 ---
 
-### 4️⃣ Launch the Web Dashboard (UI)
+### 5️⃣ Launch the Web Dashboard (UI)
 ```bash
-make web
+trybase web
+# or: make web
 ```
-Spins up the integrated React/Vite dashboard locally with interactive provisioning, real-time terminal logs, and multi-engine selection (n8n Automation & Dify AI Studio).
+Spins up the integrated React/Vite dashboard locally at `http://localhost:5173/` with interactive provisioning, real-time terminal logs, and multi-engine selection.
 
 🎉 **That's it!** Your entire platform is live. You can immediately provision tenants via the UI, API, or GitOps.
 

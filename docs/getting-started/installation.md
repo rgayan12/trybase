@@ -20,36 +20,57 @@ Ensure your local workstation or CI/CD runner has the following minimum versions
 
 ---
 
-## 2. Automated Environment Check
+## 2. Installing the TryBase CLI
 
-TryBase provides an automated pre-flight validation target in the Makefile:
+Install the unified TryBase developer CLI globally:
 
 ```bash
-make check-env
+npm install -g @trybase/cli
+```
+
+*If working directly inside the cloned TryBase repository, you can build and link the CLI locally with:*
+```bash
+make cli
+```
+
+---
+
+## 3. Automated Pre-Flight Health Check (`trybase doctor`)
+
+Run the automated diagnostic suite to verify your workstation tools, AWS credentials, and Docker engine:
+
+```bash
+trybase doctor
+# or: make doctor / make check-env
 ```
 
 Expected output:
 
 ```text
-Checking workstation dependencies...
-[OK] terraform found: Terraform v1.8.2
-[OK] aws cli found: aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0
-[OK] docker found: Docker version 26.0.0, build 2ae903e
-[OK] infracost found: Infracost v0.10.35
-[OK] node found: v20.12.2
-[OK] jq found: jq-1.7.1
-All dependencies satisfied. Ready to deploy TryBase.
+🩺 TryBase Pre-Flight Health Check
+Repository Root: /path/to/trybase
+
+  ✔ Node.js                  v20.18.3 (>= 18.0.0 required)
+  ✔ Terraform                v1.5.7
+  ✔ AWS Credentials          Account: 123456789012 (eu-west-2)
+  ✔ Docker Daemon            Running
+  ✔ Supabase CLI             Authenticated (v2.90.0)
+  ✔ Infracost (FinOps)       infracost version v2.18.2
+  ✔ Infrastructure Config    terraform.tfvars present
+
+──────────────────────────────────────────────────────────────────
+🎉 All required tools operational! Workstation is ready.
 ```
 
-If any dependency is missing, install it via Homebrew on macOS:
+If any tool is missing, install it via Homebrew on macOS:
 
 ```bash
-brew install terraform awscli docker infracost node jq
+brew install terraform awscli docker infracost node supabase/tap/supabase
 ```
 
 ---
 
-## 3. AWS Account Permissions
+## 4. AWS Account Permissions
 
 TryBase provisions an interconnected cloud fleet and requires an IAM identity with permissions for:
 
@@ -92,7 +113,7 @@ aws sts get-caller-identity
 
 ---
 
-## 4. Supabase Control Plane Setup (Free)
+## 5. Supabase Control Plane Setup (Free)
 
 TryBase uses Supabase for user authentication, organization management, and tenant control plane tracking:
 
@@ -105,7 +126,8 @@ TryBase uses Supabase for user authentication, organization management, and tena
    ```
 4. Deploy the database schema and Edge Functions:
    ```bash
-   make control-plane
+   trybase control-plane
+   # or: make control-plane
    ```
    *When prompted, paste your 20-character **Project Reference ID** and enter your database password. TryBase will automatically push all database migrations and deploy provisioning edge functions.*
 

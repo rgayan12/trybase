@@ -96,15 +96,16 @@ OVERALL TOTAL:                      ~$280.00 / mo baseline (Multi-AZ)
 Once satisfied with the cost forecast, execute the automated infrastructure deployment:
 
 ```bash
-make infra
+trybase infra
+# or: make infra
 ```
 
 This target performs the following operations:
-1. **Initializes Remote State**: Configures S3 backend with DynamoDB state locking (`make bootstrap`).
+1. **Initializes Remote State**: Configures S3 backend with DynamoDB state locking (`trybase bootstrap`).
 2. **Provisions Network Core**: Creates the multi-AZ VPC, public/private subnets, Route Tables, and NAT Gateways.
 3. **Deploys Hypervisor**: Configures the ECS Fargate cluster with Graviton ARM64 execution support.
 4. **Stands up Vector Database**: Boots an RDS PostgreSQL 16.3 instance with the native `pgvector` 0.7.0 extension enabled.
-5. **Configures Wildcard Ingress**: Attaches wildcard ACM certificates to the Application Load Balancer (`*.trybase.yourdomain.com`).
+5. **Configures Wildcard Ingress**: Attaches wildcard ACM certificates to the Application Load Balancer (`*.apps.yourdomain.com`).
 6. **Deploys Step Functions**: Configures the asynchronous provisioning state machine and API Gateway integration.
 
 Deployment typically completes in **6 to 8 minutes**.
@@ -134,9 +135,11 @@ VITE_API_GATEWAY_URL=https://api.yourdomain.com/v1
 
 ### 2. Start the Development Server
 
+From your repository root, run:
+
 ```bash
-npm install
-npm run dev
+trybase web
+# or: make web
 ```
 
 Visit `http://localhost:5173` to sign in. In the open-source version, authentication takes you straight to the dashboard with **unlimited container deployments** on your AWS fleet.

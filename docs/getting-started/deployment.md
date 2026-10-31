@@ -10,7 +10,8 @@
 Before applying infrastructure, create an isolated S3 bucket for Terraform remote state and a DynamoDB table for distributed state locking:
 
 ```bash
-make bootstrap
+trybase bootstrap
+# or: make bootstrap
 ```
 
 This ensures that team members cannot execute concurrent conflicting deployments.
@@ -25,14 +26,15 @@ This ensures that team members cannot execute concurrent conflicting deployments
 Execute the automated fleet deployment:
 
 ```bash
-make infra
+trybase infra
+# or: make infra
 ```
 
 This target runs `deploy-infra.sh`, executing the following pipeline:
 
 ```mermaid
 graph TD
-    A[make infra] --> B[Initialize Terraform & Validate Modules]
+    A[trybase infra] --> B[Initialize Terraform & Validate Modules]
     B --> C[Provision Multi-AZ VPC & NAT Gateways]
     C --> D[Stand up Graviton RDS PostgreSQL 16.3 + pgvector]
     D --> E[Configure Shared Application Load Balancer & ACM Wildcard]
@@ -66,7 +68,8 @@ wildcard_certificate_arn = "arn:aws:acm:eu-west-2:656876168893:certificate/a1b2c
 Once the AWS infrastructure is active, apply database migrations and deploy Edge orchestration functions:
 
 ```bash
-make control-plane
+trybase control-plane
+# or: make control-plane
 ```
 
 This target:

@@ -190,6 +190,23 @@ if [ -n "$PROJECT_REF" ]; then
         echo -e "\nsupabase_url   = \"$SUPA_URL\"" >> "$TFVARS"
     fi
     echo -e "✅ Updated ${CYAN}$TFVARS${RESET} with supabase_url = ${CYAN}$SUPA_URL${RESET}"
+
+    # Auto-fetch ES256 JWKS public key coordinates for API Gateway authorizer
+    JWKS_JSON=$(curl -s "https://${PROJECT_REF}.supabase.co/auth/v1/.well-known/jwks.json" 2>/dev/null || echo "")
+    if command -v jq >/dev/null 2>&1 && [ -n "$JWKS_JSON" ]; then
+        JWK_X=$(echo "$JWKS_JSON" | jq -r '.keys[0].x // empty' 2>/dev/null || echo "")
+        JWK_Y=$(echo "$JWKS_JSON" | jq -r '.keys[0].y // empty' 2>/dev/null || echo "")
+
+        if [ -n "$JWK_X" ] && [ -n "$JWK_Y" ]; then
+            if grep -q "supabase_jwk_x" "$TFVARS"; then
+                sed -i.bak "s|supabase_jwk_x.*=.*|supabase_jwk_x = \"$JWK_X\"|g" "$TFVARS" && rm -f "${TFVARS}.bak"
+            fi
+            if grep -q "supabase_jwk_y" "$TFVARS"; then
+                sed -i.bak "s|supabase_jwk_y.*=.*|supabase_jwk_y = \"$JWK_Y\"|g" "$TFVARS" && rm -f "${TFVARS}.bak"
+            fi
+            echo -e "✅ Auto-configured Supabase ES256 JWK coordinates in ${CYAN}$TFVARS${RESET}"
+        fi
+    fi
 fi
 
 echo -e "\n=================================================================="

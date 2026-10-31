@@ -79,14 +79,10 @@ CREATE POLICY "Owners can update their organization"
   WITH CHECK (auth.uid() = owner_id);
 
 -- RLS Policies for Organization Members
-CREATE POLICY "Members can view other members in their organization"
+CREATE POLICY "Members can view memberships in their organization"
   ON organization_members FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM organization_members AS m
-      WHERE m.org_id = organization_members.org_id
-        AND m.user_id = auth.uid()
-    ) OR
+    user_id = auth.uid() OR
     EXISTS (
       SELECT 1 FROM organizations AS o
       WHERE o.id = organization_members.org_id

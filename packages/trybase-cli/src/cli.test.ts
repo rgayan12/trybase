@@ -70,16 +70,20 @@ workloads:
   - name: runner
     archetype: openclaw
     subdomain: agent.acme.trybase.dev
+  - name: computer
+    archetype: openmuse
+    subdomain: muse.acme.trybase.dev
 `
   );
 
   const manifest = parseFleetManifest(manifestPath);
   assert.equal(manifest.organization, 'acme-ai');
-  assert.equal(manifest.workloads.length, 3);
+  assert.equal(manifest.workloads.length, 4);
   assert.equal(manifest.workloads[0].name, 'workflow');
   assert.equal(manifest.workloads[0].archetype, 'n8n');
   assert.equal(manifest.workloads[1].archetype, 'dify');
   assert.equal(manifest.workloads[2].archetype, 'openclaw');
+  assert.equal(manifest.workloads[3].archetype, 'openmuse');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

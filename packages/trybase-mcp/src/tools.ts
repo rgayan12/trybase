@@ -25,7 +25,7 @@ export const TOOLS = [
         },
         archetype: {
           type: 'string',
-          enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'bedrock-agent', 'dify', 'custom'],
+          enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'openmuse', 'bedrock-agent', 'dify', 'custom'],
           description: 'Application framework archetype',
         },
         imageTag: {
@@ -212,7 +212,7 @@ export const TOOLS = [
               subdomain: { type: 'string', description: 'Subdomain for ingress (e.g. n8n.acme.trybase.io)' },
               archetype: {
                 type: 'string',
-                enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'bedrock-agent', 'dify', 'custom'],
+                enum: ['laravel', 'django', 'n8n', 'agent', 'openclaw', 'openmuse', 'bedrock-agent', 'dify', 'custom'],
               },
               imageTag: { type: 'string' },
               cpu: { type: 'number', default: 512 },

@@ -45,7 +45,17 @@ workloads:
       WORKSPACE_DIR: "/workspace"
       ENABLE_ANTI_LEAK: "true"
 
-  # 4. Optional Custom Backend API (Laravel / Django / Node / Go)
+  # 4. Agent Computer / Browser & Sandbox Environment (OpenMuse)
+  - name: computer
+    archetype: openmuse
+    subdomain: muse.acme.trybase.dev
+    cpu: 1024
+    memory: 2048
+    secrets:
+      SANDBOX_TIMEOUT_SEC: "1800"
+      ENABLE_ANTI_LEAK: "true"
+
+  # 5. Optional Custom Backend API (Laravel / Django / Node / Go)
   - name: core-api
     archetype: laravel
     subdomain: api.acme.trybase.dev

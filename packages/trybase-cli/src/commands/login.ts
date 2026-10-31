@@ -11,9 +11,6 @@ export interface LoginOptions {
   supabaseKey?: string;
 }
 
-const DEFAULT_SUPABASE_URL = 'https://tkcvtcmtckodjqickext.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_HU5aZRQ_x1lINP3H-LgAPg_SvUZi90g';
-
 function discoverLocalEnv(): { url?: string; key?: string } {
   const candidateFiles = [
     path.resolve(process.cwd(), '.env.local'),
@@ -52,26 +49,25 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     config.supabaseUrl ||
-    localEnv.url ||
-    DEFAULT_SUPABASE_URL;
+    localEnv.url;
 
   const anonKey =
     options.supabaseKey ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY ||
     config.supabaseKey ||
-    localEnv.key ||
-    DEFAULT_SUPABASE_ANON_KEY;
+    localEnv.key;
 
   // 1. Direct Session Token / JWT Login
   if (options.token) {
     saveConfig({
       sessionToken: options.token,
       defaultOrg: options.org || config.defaultOrg,
-      supabaseUrl,
-      supabaseKey: anonKey,
+      ...(supabaseUrl ? { supabaseUrl } : {}),
+      ...(anonKey ? { supabaseKey: anonKey } : {}),
     });
     console.log(`✅ Authenticated with TryBase via Ephemeral Session Token.`);
+    if (supabaseUrl) console.log(`   Control Plane URL: ${supabaseUrl}`);
     if (options.org) console.log(`   Default organization: "${options.org}"`);
     console.log(`🔒 Anti-Leak Standard: Session token active in ~/.trybase/config.json (Zero static keys).`);
     return;
@@ -79,6 +75,11 @@ export async function loginCommand(options: LoginOptions): Promise<void> {
 
   // 2. Email & Password Supabase Auth Flow
   if (options.email && options.password) {
+    if (!supabaseUrl || !anonKey) {
+      console.error(`❌ Missing Control Plane URL or API Key.`);
+      console.error(`   Pass --supabase-url and --supabase-key, or run from a directory with .env.local.`);
+      process.exit(1);
+    }
     console.log(`🔐 Authenticating with Supabase Control Plane (${supabaseUrl})...`);
     try {
       const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {

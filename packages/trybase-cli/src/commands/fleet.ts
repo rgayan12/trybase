@@ -5,7 +5,7 @@ import { parseEnvFile } from './env.js';
 
 export interface FleetWorkloadConfig {
   name: string;
-  archetype: 'laravel' | 'django' | 'n8n' | 'agent' | 'openclaw' | 'bedrock-agent' | 'dify' | 'custom';
+  archetype: 'laravel' | 'django' | 'n8n' | 'agent' | 'openclaw' | 'openmuse' | 'bedrock-agent' | 'dify' | 'custom';
   subdomain: string;
   imageTag?: string;
   cpu?: number;
@@ -60,6 +60,7 @@ export function parseFleetManifest(manifestPath: string): FleetManifest {
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { SecretsManagerClient, PutSecretValueCommand, CreateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { loadConfig } from '../config.js';
+import { upsertControlPlaneWorkspace } from '../supabase.js';
 
 const DEFAULT_SFN_ARN = process.env.TRYBASE_SFN_ARN || 'arn:aws:states:eu-west-2:656876168893:stateMachine:n8n-provision-tenant';
 const DEFAULT_REGION = process.env.AWS_REGION || 'eu-west-2';
@@ -112,7 +113,19 @@ export async function deployFleet(
     const tenantId = `${manifest.organization}-${w.name}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const priority = getPriorityForTenant(tenantId);
 
-    // 1. If secrets exist, push to AWS Secrets Manager
+    // 1. Sync / Register in Supabase Control Plane so web dashboard reflects it
+    const workloadType = w.archetype === 'openmuse' ? 'openmuse' : w.archetype === 'openclaw' ? 'openclaw' : w.archetype === 'dify' ? 'dify' : 'n8n';
+    const synced = await upsertControlPlaneWorkspace({
+      tenantId,
+      archetype: workloadType,
+      priority,
+      subdomain: w.subdomain,
+    });
+    if (synced && !options.quiet) {
+      console.log(`   📝 Registered in Supabase Control Plane: "${tenantId}"`);
+    }
+
+    // 2. If secrets exist, push to AWS Secrets Manager
     if (w.secrets && Object.keys(w.secrets).length > 0) {
       const secretId = `trybase/tenants/${tenantId}/secrets`;
       const secretString = JSON.stringify(w.secrets);
@@ -129,7 +142,7 @@ export async function deployFleet(
       }
     }
 
-    // 2. Dispatch real Step Functions StartExecutionCommand
+    // 3. Dispatch real Step Functions StartExecutionCommand
     if (!options.quiet) {
       console.log(`⚡ Dispatching AWS Step Functions Virtual Single-Tenancy Provisioner for "${tenantId}"...`);
     }
@@ -137,7 +150,7 @@ export async function deployFleet(
     try {
       const payload = {
         tenant_id: tenantId,
-        workload_type: w.archetype === 'openclaw' ? 'openclaw' : w.archetype === 'dify' ? 'dify' : 'n8n',
+        workload_type: workloadType,
         alb_listener_rule_priority: priority,
         subdomain: w.subdomain,
       };

@@ -1351,8 +1351,8 @@ const Dashboard = () => {
                     </span>
                     <code style={{ color: '#38bdf8', fontSize: '0.82rem', fontFamily: 'monospace' }}>
                       {session?.access_token
-                        ? `trybase login --token ${session.access_token.substring(0, 24)}...`
-                        : 'trybase login --token <session_token>'}
+                        ? `trybase login --token ${session.access_token.substring(0, 16)}... --url ${import.meta.env.VITE_SUPABASE_URL || '...'}`
+                        : 'trybase login --token <session_token> --url <control_plane_url>'}
                     </code>
                   </div>
 
@@ -1360,7 +1360,9 @@ const Dashboard = () => {
                     type="button"
                     onClick={() => {
                       if (session?.access_token) {
-                        navigator.clipboard?.writeText(`trybase login --token ${session.access_token}`);
+                        const urlArg = import.meta.env.VITE_SUPABASE_URL ? ` --url ${import.meta.env.VITE_SUPABASE_URL}` : '';
+                        const keyArg = import.meta.env.VITE_SUPABASE_ANON_KEY ? ` --key ${import.meta.env.VITE_SUPABASE_ANON_KEY}` : '';
+                        navigator.clipboard?.writeText(`trybase login --token ${session.access_token}${urlArg}${keyArg}`);
                         setCliCopied(true);
                         setTimeout(() => setCliCopied(false), 2500);
                       }

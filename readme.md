@@ -554,3 +554,7 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 - **TryBase** is an independent, community-driven open-source project and is not affiliated with, endorsed by, or sponsored by n8n GmbH.
 - `n8n` is a registered trademark of n8n GmbH.
 - n8n software is distributed under its Fair-Code [Sustainable Use License](https://n8n.io/legal/sustainable-use-license). While this repository provides infrastructure code for self-hosting n8n instances, anyone intending to offer n8n as a commercial SaaS service to third parties should consult n8n GmbH regarding their commercial licensing terms.
+
+## Contact
+Bastiyan Rodrigo
+https://trybase.io

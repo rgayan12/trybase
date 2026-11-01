@@ -1,30 +1,31 @@
 # Security Standard & Zero-Trust IAM
 
-TryBase was designed under the assumption that application-level vulnerabilities will occur. The security model ensures that even in the event of arbitrary remote code execution (RCE) or supply-chain corruption within an agent container, the blast radius is strictly contained.
+TryBase was designed under the assumption that application-level vulnerabilities will occur. The security model ensures that even in the event of arbitrary command execution or supply-chain corruption within an application container, exposure of cloud and infrastructure secrets is strictly minimized.
 
 ---
 
-## The Anti-Leak Standard
+## TryBase v1 Security Scope & Threat Model
 
-### Lessons from Industry Breaches
-In high-profile platform security incidents (such as the 2026 Railway breach), attackers gained access through vulnerable edge components and dumped environment variables or configuration stores containing static credentials:
-* AWS IAM Access Keys (`AKIA...`)
-* Permanent database master passwords
-* Third-party foundation model API keys
+### TryBase v1 security scope
 
-Because these keys were long-lived and broad in scope, the breach cascaded across the entire platform.
+TryBase delivers configured secrets over a Unix-domain socket into application memory, avoiding the need to store those secrets in production .env files or inject them into process environment variables.
 
-### TryBase Invariant: Zero Static Secrets
-In TryBase, **zero static AWS credentials or master passwords are ever passed into container environment variables**. If an attacker executes `env`, inspects `/proc/1/environ`, or runs an arbitrary shell command, they will find no AWS keys.
+This reduces exposure through secret-file disclosure, environment dumps and automatic environment inheritance by child processes. The daemon applies implemented peer-verification rules before returning secrets.
+
+These controls do not establish that an authorised interpreter is executing trusted application code. Malicious code running inside the authorised application may access delivered secrets and exercise the application’s permissions. Secrets may also leak through application logging, debugging or configuration caching unless those paths are controlled.
+
+Tenant containment depends on correctly configured database permissions, IAM policies and workload isolation. Shared database infrastructure retains shared resource and availability risks.
+
+Host/kernel compromise and privileged process inspection are outside this mechanism’s protection.
 
 ---
 
 ## Keyless STS Authentication
 
-Workloads interact with AWS services (such as Amazon Bedrock, S3, or DynamoDB) using short-lived tokens minted by the AWS Security Token Service (STS).
+Workloads interact with AWS services (such as Amazon Bedrock, S3, or DynamoDB) using temporary credentials minted by the AWS Security Token Service (STS).
 
 ### The Link-Local Metadata Agent (`169.254.170.2`)
-AWS Fargate exposes a link-local metadata endpoint reachable exclusively from within that specific MicroVM:
+AWS Fargate exposes a link-local metadata endpoint reachable from within that task:
 
 ```text
 http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
@@ -32,22 +33,20 @@ http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  Fargate MicroVM Container                                     │
+│  Fargate Task Container                                        │
 │                                                                │
-│  1. Agent code initializes SDK (boto3 / @aws-sdk)              │
+│  1. Application code initializes SDK (boto3 / @aws-sdk)        │
 │  2. SDK queries http://169.254.170.2/credentials               │
-│  3. AWS STS returns temporary ASIA... token (valid 60 min)     │
-│  4. SDK silently refreshes token in-memory before expiry       │
+│  3. AWS STS returns temporary ASIA... credentials              │
+│  4. SDK automatically refreshes credentials prior to expiry    │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### The 60-Minute Rotation Cycle
+### Temporary Credential Refresh Cycle
 1. **SDK Query**: The application SDK detects no local environment credentials and queries `169.254.170.2`.
 2. **STS Minting**: STS assumes the container's dedicated Task Role and issues temporary credentials starting with `ASIA...`.
-3. **Silent Refresh**: 10–15 minutes prior to expiration, the SDK automatically refreshes the token in memory.
-4. **Zero Disruption**: The application never restarts, reconnects, or encounters auth expiration.
-
-If an attacker dumps the in-memory token, it is cryptographically bound to that microVM and expires within minutes.
+3. **Automatic Refresh**: Prior to expiration, the SDK automatically refreshes credentials in memory.
+4. **Task Scoping**: The temporary credentials are bound to that specific task's IAM role.
 
 ---
 
@@ -86,7 +85,7 @@ Application containers must never receive the PostgreSQL master password. Instea
 
 ```mermaid
 sequenceDiagram
-    participant App as Fargate MicroVM
+    participant App as Fargate Task
     participant STS as Link-Local STS (169.254.170.2)
     participant RDS as Graviton RDS PostgreSQL
 
@@ -99,8 +98,8 @@ sequenceDiagram
 ```
 
 1. The container generates an auth token signed with its IAM Task Role.
-2. The token is passed as the password when connecting to PostgreSQL.
-3. The token expires in **15 minutes** and cannot be used by unauthorized entities.
+2. The token is passed as the password when establishing a connection to PostgreSQL.
+3. The token serves as an ephemeral connection-handshake credential (valid for 15 minutes to establish a connection). Active database connections remain open after connection establishment; long-running application workers must regenerate a fresh token when reconnecting after pool drops.
 
 ---
 

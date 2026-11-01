@@ -15,7 +15,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 **One Organization. One Private VPC. Your Entire Interconnected AI Stack.**  
-Deploy `n8n` (workflow glue), `Dify` (knowledge & prompt studio), `OpenClaw / Bedrock Agents` (autonomous code runner), and full-stack backends (`Laravel`, `Django`, `Go`, `Node`) simultaneously—with true Firecracker microVM compute isolation, isolated PostgreSQL schemas, and zero plaintext `.env` files on production disk.
+Deploy `n8n` (workflow glue), `Dify` (knowledge & prompt studio), `OpenClaw / Bedrock Agents` (autonomous code runner), and full-stack backends (`Laravel`, `Django`, `Go`, `Node`) simultaneously—with AWS task-level hardware virtualization isolation, isolated PostgreSQL schemas, and runtime secret delivery avoiding production `.env` files on disk.
 
 [📚 Read Full Documentation](docs/README.md) • [The Hook: Why TryBase?](#-why-trybase) • [Virtual Single-Tenancy](#-the-two-core-principles) • [Architecture](#-architecture) • [TryBase MCP](#-model-context-protocol-mcp-server) • [Developer CLI](#-trybase-developer-cli) • [Quickstart](#-quickstart-guide)
 
@@ -32,18 +32,18 @@ Building an AI agent or microservice locally in Docker is simple (`docker run my
 - **Separate Cloud VMs & Databases** create massive infrastructure bloat, complex VPC peering, and crippling AWS bills.
 
 **TryBase solves this with Virtual Single-Tenancy + The Anti-Leak Standard:**  
-Developers write simple single-tenant code without polluting their database with `tenant_id` columns. TryBase orchestrates dedicated **AWS ECS Firecracker MicroVMs**, dedicated PostgreSQL schemas (`schema_<tenant>`), and secret delivery over Linux **Unix Domain Sockets (`AF_UNIX`)** on shared AWS infrastructure (~$35–$65/mo baseline instead of $5,000/mo).
+Developers write simple single-tenant code without polluting their database with `tenant_id` columns. TryBase orchestrates dedicated **AWS ECS Fargate tasks with task-level hardware virtualization**, dedicated PostgreSQL schemas (`schema_<tenant>`), and secret delivery over Linux **Unix Domain Sockets (`AF_UNIX`)** on shared AWS infrastructure (~$35–$65/mo baseline instead of $5,000/mo).
 
 | Feature | Single VPS (Coolify / Compose) | Managed AI SaaS | Kubernetes (EKS) | TryBase Engine |
 | :--- | :---: | :---: | :---: | :---: |
-| **Compute Isolation** | ❌ Shared Host Process | ✅ Isolated | ⚠️ Shared Node Kernel | ✅ **Dedicated Firecracker MicroVM** |
+| **Compute Isolation** | ❌ Shared Host Process | ✅ Isolated | ⚠️ Shared Node Kernel | ✅ **Task-Level Hardware Virtualization (Fargate)** |
 | **Secrets Security** | ❌ Plaintext `.env` on disk | ⚠️ Provider Cloud | ⚠️ Insecure ConfigMaps | ✅ **The Anti-Leak Standard (`AF_UNIX` IPC)** |
 | **Multi-Workload AI Stack** | ⚠️ Complex manual stitching | ❌ Disparate SaaS bills | ⚠️ High YAML toil | ✅ **1-Click Fleet (`n8n` + `dify` + `agent`)** |
 | **Database & Vector Memory** | ❌ Shared Tables / Unmanaged | ✅ Isolated | ❌ DIY Pods | ✅ **Dedicated RDS Schema + `pgvector`** |
 | **Subdomain Routing** | ⚠️ Traefik / Nginx on VPS | ✅ Automated | ⚠️ Ingress-NGINX | ✅ **Host-Header ALB with ACM Wildcard TLS** |
 | **AI Agent Control (MCP)** | ❌ None | ❌ Proprietary UI | ❌ Complex Ops | ✅ **Native MCP for Claude & Cursor** |
 | **Base Platform Cost** | ~$20/mo (No fault isolation) | ~$250–$500/mo | ~$150–$250/mo | **~$35–$65/mo (Fleet-wide)** |
-| **Cost for 20 Tenants** | ~$60/mo (Single crash takes all) | ~$2,000–$5,000/mo | ~$350+/mo | **~$120–$140/mo (Full microVM isolation)** |
+| **Cost for 20 Tenants** | ~$60/mo (Single crash takes all) | ~$2,000–$5,000/mo | ~$350+/mo | **~$120–$140/mo (Full task isolation)** |
 
 ---
 
@@ -110,7 +110,7 @@ In traditional multi-tenancy, developers spend months adding `tenant_id` columns
 
 **TryBase introduces Virtual Single-Tenancy:**
 - **Single-Tenant Simplicity**: You write code as if only one company exists in the world.
-- **Physical Isolation**: Each workload runs inside a dedicated **AWS Firecracker MicroVM** (ECS Fargate) with zero shared memory and isolated PostgreSQL schemas (`schema_<tenant>`) on a high-density Graviton RDS cluster.
+- **Physical Isolation**: Each workload runs inside a dedicated **AWS Fargate task with hardware virtualization** with zero shared memory and isolated PostgreSQL schemas (`schema_<tenant>`) on a high-density Graviton RDS cluster.
 - **Micro-Economics**: You get the rock-solid isolation of dedicated hardware with the cost efficiency of shared infrastructure (~$35–$65/mo base for the entire cluster).
 
 ---
@@ -119,11 +119,16 @@ In traditional multi-tenancy, developers spend months adding `tenant_id` columns
 Environment variables (`process.env`) and `.env` files are the #1 vulnerability in modern cloud computing. A single malicious npm/pip dependency, debug endpoint, or server error log dumps raw API keys to external attackers.
 
 **TryBase enforces the Anti-Leak Standard:**
-- **Zero Plaintext Files on Disk**: Production tasks have no `.env` files.
-- **Sanitized `process.env`**: Container environments are scrubbed clean of production credentials.
-- **Kernel-Level Identity Verification**: Secrets are delivered in-memory via an in-task Linux Unix Domain Socket (`/var/run/trybase/secrets.sock`).
-- **`SO_PEERCRED` & `/proc/<pid>/exe` Binary Inspection**: The TryBase Rust sidecar daemon queries the Linux kernel to verify caller PID, UID, and binary authenticity before vending secrets.
-- **Ephemeral STS & RDS IAM Tokens**: Database passwords expire every 15 minutes and rotate silently in memory.
+- **Reduced Secret File Exposure**: Avoids requiring `.env` files in production task filesystems.
+- **Sanitized `process.env`**: Secrets are delivered over Unix Domain Sockets rather than injected into static environment variables.
+- **In-Task RAM-Only Delivery**: Secrets are delivered in-memory via an in-task Linux Unix Domain Socket (`/var/run/trybase/secrets.sock`).
+- **`SO_PEERCRED` & Executable Inspection**: The TryBase daemon queries the Linux kernel to verify caller PID, UID, and inspects executable paths via `/proc/<pid>/exe` before vending secrets.
+- **Ephemeral STS & RDS IAM Tokens**: Temporary AWS STS credentials with automatic refresh and temporary RDS IAM connection tokens.
+
+> [!NOTE]
+> **TryBase v1 security scope**: TryBase delivers configured secrets over a Unix-domain socket into application memory, avoiding the need to store those secrets in production .env files or inject them into process environment variables. This reduces exposure through secret-file disclosure, environment dumps and automatic environment inheritance by child processes. The daemon applies implemented peer-verification rules before returning secrets.
+> 
+> *Explicit Limitations*: These controls do not establish that an authorised interpreter is executing trusted application code. Malicious code running inside the authorised application may access delivered secrets and exercise the application’s permissions. Secrets may also leak through application logging, debugging or configuration caching unless those paths are controlled. Tenant containment depends on correctly configured database permissions, IAM policies and workload isolation. Shared database infrastructure retains shared resource and availability risks. Host/kernel compromise and privileged process inspection are outside this mechanism’s protection.
 
 ---
 
@@ -237,14 +242,14 @@ While Kubernetes is powerful for microservice meshes, running multi-tenant isola
 | :--- | :--- | :--- |
 | **Minimum Base Cost** | **~$150–$250 / month** ($73/mo EKS cluster fee + redundant EC2 worker nodes) | **~$50 / month** (ALB + Graviton RDS; Fargate has zero cluster fee) |
 | **Maintenance Overhead** | **High** (Mandatory yearly k8s version upgrades, deprecated APIs, node patching, CNI upgrades, Helm charts) | **Zero** (Serverless AWS managed runtime; no nodes, no OS, no cluster to patch) |
-| **Container Isolation** | **Shared Linux Kernel** (Pods share nodes; vulnerable to noisy neighbors and kernel exploits) | **Firecracker MicroVM** (Every tenant task runs in a dedicated hardware hypervisor) |
+| **Container Isolation** | **Shared Linux Kernel** (Pods share nodes; vulnerable to noisy neighbors and kernel exploits) | **Task-Level Hardware Virtualization** (Every tenant task runs within AWS Fargate's hardware virtualization boundary) |
 | **DevOps Footprint** | **Requires Dedicated SRE** (Ingress-NGINX, Cert-Manager, Karpenter, Pod Disruption Budgets) | **Developer-Friendly** (2 CLI commands: `make control-plane` and `make infra`) |
 | **Database Multi-Tenancy** | **Unsolved** (Requires custom operators or 20 separate unmanaged Postgres pods) | **Built-in** (Automated Postgres schema engine + AWS Secrets Manager) |
 
 ### Key Architectural Rationale
 
 1. **Zero "Cluster Tax"**: In AWS, just keeping an EKS control plane alive costs **$73.00/month** before deploying a single pod. Add two worker nodes for high availability, and your minimum baseline is ~$150+/month even with zero users. TryBase uses **ECS Fargate**, which has **$0.00 cluster fees**—you only pay for active container seconds.
-2. **True Hardware Isolation (MicroVMs)**: In standard Kubernetes, pods share the worker node's host kernel. If Tenant A runs a runaway workflow or encounters a memory leak, it can starve or crash the node, impacting Tenant B. With AWS Fargate, each tenant container runs inside its own **AWS Firecracker MicroVM** with hardware-level boundary isolation.
+2. **Task-Level Hardware Virtualization**: In standard Kubernetes, pods share the worker node's host kernel. If Tenant A runs a runaway workflow or encounters a memory leak, it can starve or crash the node, impacting Tenant B. With AWS Fargate, each tenant task runs within AWS's documented task-level hardware virtualization boundary.
 3. **No Kubernetes Upgrade Treadmill**: Kubernetes forces major version upgrades every ~12 months, which routinely break Ingress resources, CRDs, and CNI plugins. TryBase relies entirely on managed serverless building blocks (Fargate, Step Functions, RDS), meaning zero node management, zero AMI patching, and zero operational toil.
 4. **The Database Problem**: Kubernetes only orchestrates containers—it does not solve data isolation. TryBase provides the automated database schema provisioning pipeline (`CREATE SCHEMA tenant_slug`) on a single high-performance Graviton RDS instance, achieving strict isolation at 90% lower cost.
 
@@ -462,13 +467,13 @@ def chat(prompt: str):
 
 | Architectural Vector | Fragile Status Quo (PaaS / DIY) | The TryBase Hyperscaler Standard |
 | :--- | :--- | :--- |
-| **API Credentials** | Permanent keys (`AKIA...` / `sk-...`) in `.env` files or databases. | **Zero secrets stored.** In-memory STS tokens auto-rotated every 60 min. |
+| **API Credentials** | Permanent keys (`AKIA...` / `sk-...`) in `.env` files or databases. | **Temporary credentials.** In-memory STS credentials refreshed automatically by SDK. |
 | **Supply Chain Exposure** | Malicious packages dump environment variables to external servers. | **No static keys exist** in the environment to steal. |
 | **Multi-Tenant Blast Radius** | Shared API keys. One compromised container drains everyone's quotas. | **Per-tenant IAM Task Roles.** Tenant A physically cannot call Tenant B's models. |
 | **Network Attack Surface** | Containers assigned public IPv4 addresses reachable by botnets. | **100% Private VPC (0 Public IPs).** ALB terminates TLS; tasks sit in private subnets. |
 
 **Instant Results:**
-- 🛡️ **Private MicroVM**: Runs in its own AWS Firecracker MicroVM on Fargate — no shared memory, no host kernel leaks.
+- 🛡️ **Task-Level Virtualization**: Runs in its own AWS Fargate task with hardware virtualization boundary.
 - 🌐 **Instant HTTPS Subdomain**: Live immediately at `https://finance-bot.<yourdomain.com>` with automatic ACM wildcard TLS.
 - 🧠 **Native Vector Memory**: Connected directly to Graviton RDS with native `pgvector` enabled for semantic search and RAG.
 

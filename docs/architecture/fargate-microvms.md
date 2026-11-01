@@ -1,13 +1,13 @@
 # Fargate Graviton MicroVMs
 
 > [!NOTE]
-> TryBase standardizes compute on AWS Fargate powered by AWS Graviton (ARM64) processors. Each workload runs in a dedicated Firecracker MicroVM.
+> TryBase standardizes compute on AWS Fargate powered by AWS Graviton (ARM64) processors. Each workload executes within AWS's documented task-level hardware virtualization boundary.
 
 ---
 
-## 1. Firecracker Hypervisor Isolation
+## 1. Task-Level Hardware Virtualization Boundary
 
-Unlike legacy container engines that share the host Linux kernel, AWS Fargate provisions a dedicated **Firecracker MicroVM** for every task.
+Unlike traditional container hosts that run multiple tenants against a single shared Linux kernel, AWS Fargate provisions each task within an isolated hardware virtualization boundary:
 
 ```
 TRADITIONAL CONTAINER HOST:
@@ -17,9 +17,9 @@ TRADITIONAL CONTAINER HOST:
 │  └─ Container B (Tenant 2)                             │
 └────────────────────────────────────────────────────────┘
 
-AWS FARGATE FIRECRACKER MICROVM:
+AWS FARGATE TASK-LEVEL VIRTUALIZATION:
 ┌────────────────────────────────────────────────────────┐
-│  Firecracker Hypervisor Boundary                       │
+│  Dedicated Hardware Hypervisor Boundary                │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │ Guest Kernel A (Dedicated Memory & Registers)    │  │
 │  │ Task A: Tenant 1                                 │  │

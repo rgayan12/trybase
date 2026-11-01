@@ -14,10 +14,10 @@ The answer lies in how **AWS ECS Tasks (and Kubernetes Pods)** actually run on L
 
 ### The Big Realization: They Run on the Same MicroVM
 
-In AWS ECS Fargate, a "Task" runs multiple containers on the **exact same Firecracker MicroVM sharing the exact same Linux kernel**:
+In AWS ECS Fargate, a "Task" runs multiple containers within **AWS's documented task-level hardware virtualization boundary, sharing the same Linux kernel**:
 
 ```
-┌────────────────── AWS ECS FARGATE TASK (Single MicroVM) ─────────────────┐
+┌─────── AWS ECS FARGATE TASK (Task-Level Hardware Virtualization Boundary) ───────┐
 │                                                                           │
 │   ┌────────────────────────┐                   ┌───────────────────────┐  │
 │   │ Container A:           │                   │ Container B:          │  │
@@ -118,52 +118,63 @@ When the application connects to `/var/run/trybase/secrets.sock`, the Linux kern
 | **Data Path** | Packetized, IP stack, TCP handshake, checksums | Direct memory transfer in kernel socket queues |
 | **Latency** | ~0.5ms – 1.0ms | **~0.05ms (10x lower latency)** |
 | **Port Scanning** | Any container process can scan `127.0.0.1` | No network ports exist. Guarded by Linux file permissions |
-| **Caller Identity** | Untrusted (caller can forge headers like `X-Forwarded-For`) | **Unforgeable (`SO_PEERCRED` populated by kernel)** |
-| **Binary Verification** | Impossible over standard TCP | **Possible via `/proc/<pid>/exe` inspection** |
+| **Caller Identity** | Untrusted (caller can forge headers like `X-Forwarded-For`) | **Kernel-verified (`SO_PEERCRED` socket credentials)** |
+| **Binary Verification** | Impossible over standard TCP | **Executable path inspection via `/proc/<pid>/exe`** |
 
 ---
 
-## 4. The `SO_PEERCRED` Kernel Guarantee
+## 4. Kernel Peer Verification (`SO_PEERCRED`)
 
-When an application connects to the socket, our Rust daemon queries the kernel for the caller's credentials:
+When an application connects to the socket, the TryBase Rust daemon queries the Linux kernel for the caller's credentials:
 
 ```rust
 // daemon/src/peer.rs
 let ucred = nix::sys::socket::getsockopt(&fd, nix::sys::socket::sockopt::PeerCredentials)?;
 ```
 
-### Why `SO_PEERCRED` Cannot Be Spoofed:
-1. **The caller never sends its PID or UID over the wire.** It cannot lie, forge an HTTP header, or fake its identity.
-2. The Linux kernel inspects the caller's internal `task_struct` (the kernel process table) and passes the verified **PID**, **UID**, and **GID** directly to the daemon.
-3. Even if an attacker achieves root privileges inside a container subshell, **they cannot trick the host Linux kernel into reporting an altered PID**.
+The Linux kernel inspects the caller's internal process credentials and passes the caller's **PID**, **UID**, and **GID** directly to the daemon. The caller cannot forge these socket credentials over the wire. Note that in multi-container task definitions, sharing the process tree across containers requires enabling task-level process sharing (such as `pid_mode = "task"`).
 
 ---
 
-## 5. Binary Validation via `/proc/<pid>/exe`
+## 5. Executable Path Filtering via `/proc/<pid>/exe`
 
-Once the daemon receives the verified PID from the kernel, it resolves the caller's executable path via `/proc/<pid>/exe`:
+Once the daemon receives the caller's PID from the kernel, it resolves the caller's executable path via `/proc/<pid>/exe`:
 
 ```rust
 let binary_path = std::fs::read_link(format!("/proc/{}/exe", ucred.pid()))?;
 ```
 
-In Linux, `/proc/<pid>/exe` is a kernel-maintained magic symlink pointing to the real executable on disk:
+The daemon inspects the executable path and rejects unauthorized clients (such as paths containing `bash` or `curl` in the reference implementation):
 
-| Calling Process | `/proc/<pid>/exe` Target | TryBase Daemon Decision |
-| :--- | :--- | :--- |
-| **Laravel Worker** | `/usr/local/bin/php-fpm` | ✅ **AUTHORIZED** (Issues token & secrets) |
-| **Django Service** | `/usr/local/bin/python3` | ✅ **AUTHORIZED** (Issues token & secrets) |
-| **Reverse Shell** | `/bin/bash` or `/bin/sh` | 🚨 **BLOCKED** (Connection dropped immediately) |
-| **SSRF Probe** | `/usr/bin/curl` | 🚨 **BLOCKED** (Connection dropped immediately) |
+| Calling Executable | `/proc/<pid>/exe` Path | TryBase Daemon Action | Verified Boundary |
+| :--- | :--- | :--- | :--- |
+| **PHP Worker** | `/usr/local/bin/php-fpm` | ✅ Served | Allows configured application process |
+| **Python Service** | `/usr/local/bin/python3` | ✅ Served | Allows configured application process |
+| **Interactive Shell** | `/bin/bash` | 🚨 Dropped | Rejects process paths containing "bash" |
+| **CLI Transfer Utility** | `/usr/bin/curl` | 🚨 Dropped | Rejects process paths containing "curl" |
+
+> [!IMPORTANT]
+> **Executable path inspection is not binary integrity verification.** Verifying that a process is `/usr/local/bin/python3` proves which interpreter opened the socket, but does not prove which script it runs or whether that script has been compromised.
 
 ---
 
-## 6. Rigorous Threat Model & Security Scope
+## 6. TryBase v1 Security Scope & Threat Model
 
-To ensure engineering rigor, the security guarantees of the Anti-Leak Standard are explicitly defined:
+### TryBase v1 security scope
 
-> **Data passes through kernel-managed socket queues without traversing the network stack. An unrelated process cannot ordinarily read or inject data into the established connection.**  
-> **This isolation relies on OS filesystem access controls (`chmod 0666`), kernel peer credential verification (`SO_PEERCRED`), and endpoint binary inspection. It defends against unprivileged lateral movement, prompt injection secret theft, and reverse shells without claiming immunity from a compromised host kernel or privileged tracing (`CAP_SYS_PTRACE`).**
+TryBase delivers configured secrets over a Unix-domain socket into application memory, avoiding the need to store those secrets in production .env files or inject them into process environment variables.
+
+This reduces exposure through secret-file disclosure, environment dumps and automatic environment inheritance by child processes. The daemon applies implemented peer-verification rules before returning secrets.
+
+These controls do not establish that an authorised interpreter is executing trusted application code. Malicious code running inside the authorised application may access delivered secrets and exercise the application’s permissions. Secrets may also leak through application logging, debugging or configuration caching unless those paths are controlled.
+
+Tenant containment depends on correctly configured database permissions, IAM policies and workload isolation. Shared database infrastructure retains shared resource and availability risks.
+
+Host/kernel compromise and privileged process inspection are outside this mechanism’s protection.
+
+### Explorations (Roadmap)
+* **Credential-isolating proxy and operation-level policy enforcement**: Exploring proxying and operation-level policy enforcement so that applications can interact with external services without storing long-lived raw secrets in application memory.
+* **In-kernel enforcement and behavioural detection**: Exploring in-kernel policy caching and behavioural anomaly detection within the daemon.
 
 ---
 

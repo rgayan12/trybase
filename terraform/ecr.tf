@@ -31,9 +31,9 @@ resource "aws_ecr_lifecycle_policy" "create_schema_lambda" {
         rulePriority = 2
         description  = "Keep last 10 tagged images"
         selection = {
-          tagStatus     = "any"
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
         }
         action = {
           type = "expire"
@@ -96,9 +96,9 @@ resource "aws_ecr_lifecycle_policy" "n8n_base" {
         rulePriority = 2
         description  = "Keep last 5 images"
         selection = {
-          tagStatus     = "any"
-          countType     = "imageCountMoreThan"
-          countNumber   = 5
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 5
         }
         action = {
           type = "expire"

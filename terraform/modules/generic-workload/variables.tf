@@ -118,3 +118,23 @@ variable "enable_redis" {
   default     = false
 }
 
+# --- RDS IAM Database Authentication ---
+
+variable "enable_rds_iam" {
+  description = "Attach an IAM policy allowing the task role to connect to RDS via IAM database authentication (rds-db:connect)."
+  type        = bool
+  default     = true
+}
+
+variable "rds_resource_id" {
+  description = "The RDS Resource ID (DbiResourceId) for RDS IAM authentication scoping."
+  type        = string
+  default     = "*"
+}
+
+variable "rds_db_user" {
+  description = "The database username for RDS IAM authentication scoping."
+  type        = string
+  default     = "*"
+}
+

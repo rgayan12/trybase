@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trybase-client"
+version = "1.0.0"
+authors = [
+  { name="TryBase Core Team", email="security@trybase.io" },
+]
+description = "Kernel-authenticated zero-secret and dynamic RDS IAM client for Python and Django"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Security",
+]
+dependencies = []

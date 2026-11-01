@@ -1,12 +1,10 @@
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto::Builder;
-use hyper_util::service::TowerToHyperService;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::sync::Arc;
 use tokio::net::UnixListener;
 use tokio::signal;
 use tracing::{error, info, warn};

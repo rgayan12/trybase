@@ -139,7 +139,7 @@ pub async fn handle_request(
 
     // Route: GET /latest/database/token (Ephemeral 15-minute RDS IAM password)
     if method == Method::GET && path == "/latest/database/token" {
-        match secrets.generate_db_token() {
+        match secrets.generate_db_token().await {
             Ok(db_token) => {
                 return Ok(Response::builder()
                     .status(StatusCode::OK)

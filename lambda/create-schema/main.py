@@ -93,6 +93,13 @@ def handler(event, context):
                     cursor.execute(f'ALTER USER "{db_user_scoped}" WITH PASSWORD %s;', (tenant_db_password,))
                     logger.info(f"Updated password for scoped user '{db_user_scoped}'")
 
+                # Grant rds_iam so AWS SigV4 IAM tokens are accepted as valid passwords
+                try:
+                    cursor.execute(f'GRANT rds_iam TO "{db_user_scoped}";')
+                    logger.info(f"Granted rds_iam role to '{db_user_scoped}'")
+                except Exception as rds_iam_err:
+                    logger.warning(f"Could not grant rds_iam (non-fatal): {rds_iam_err}")
+
                 # 2. Create dedicated database owned by the scoped user
                 cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
                 if not cursor.fetchone():
@@ -121,9 +128,25 @@ def handler(event, context):
                 result_msg = f"Database '{db_name}' and user '{db_user_scoped}' created successfully with pgvector for {workload_type}."
             else:
                 # Default: schema-per-tenant (n8n, standard workloads)
+                db_user_scoped = f"usr_{db_schema}"
                 cursor.execute("CREATE SCHEMA IF NOT EXISTS %s;", (psycopg2.extensions.AsIs(f'"{db_schema}"'),))
                 logger.info(f"Successfully created schema '{db_schema}'")
-                result_msg = f"Schema '{db_schema}' created successfully with pgvector for {workload_type}."
+
+                # Create scoped tenant user for RDS IAM and schema isolation
+                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s;", (db_user_scoped,))
+                if not cursor.fetchone():
+                    cursor.execute(f'CREATE USER "{db_user_scoped}" WITH LOGIN;')
+                    logger.info(f"Successfully created user '{db_user_scoped}' for schema '{db_schema}'")
+
+                try:
+                    cursor.execute(f'GRANT rds_iam TO "{db_user_scoped}";')
+                    logger.info(f"Granted rds_iam role to '{db_user_scoped}'")
+                except Exception as rds_iam_err:
+                    logger.warning(f"Could not grant rds_iam (non-fatal): {rds_iam_err}")
+
+                cursor.execute(f'GRANT USAGE, CREATE ON SCHEMA "{db_schema}" TO "{db_user_scoped}";')
+                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{db_schema}" GRANT ALL ON TABLES TO "{db_user_scoped}";')
+                result_msg = f"Schema '{db_schema}' and user '{db_user_scoped}' created with rds_iam enabled for {workload_type}."
         
         conn.close()
 

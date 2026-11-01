@@ -28,13 +28,16 @@ Because these credentials were long-lived and broad in scope, the breach cascade
 
 ---
 
-## 2. The TryBase Anti-Leak Invariant
+## 2. The Anti-Leak Architecture Pattern
 
-TryBase addresses this vulnerability by establishing the **Anti-Leak Invariant**:
+TryBase addresses this vulnerability by establishing the **Anti-Leak Pattern**:
 
-> **No persistent cloud credentials or master database passwords may ever be injected into application container environment variables.**
+> **Avoid injecting persistent cloud credentials or master database passwords into application process environments whenever runtime or keyless delivery is available.**
 
-Instead of storing secrets in the environment, TryBase enforces temporary credential delivery at runtime:
+Instead of baking credentials into Docker image layers or storing production `.env` files on task filesystems:
+* **Cloud APIs (Bedrock, S3)**: Workloads use AWS IAM Task Roles and link-local STS (`169.254.170.2`) for temporary, keyless API execution.
+* **Database Access**: Custom backends and agents can leverage temporary RDS IAM connection tokens (15-min TTL) minted via SigV4 or retrieve secrets over the in-task Unix Domain Socket.
+* **Packaged Third-Party Software**: Applications like n8n and Dify receive their database credentials securely from encrypted AWS Secrets Manager vaults.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐

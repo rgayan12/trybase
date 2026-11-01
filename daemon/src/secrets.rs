@@ -74,27 +74,45 @@ impl SecretStore {
     /// Generate an ephemeral 15-minute RDS IAM Database Auth Token
     /// In production on AWS, this uses STS link-local credentials to generate
     /// a signed presigned URL token valid as the PostgreSQL password for 15 minutes.
-    pub fn generate_db_token(&self) -> Result<DatabaseAuthToken, String> {
-        let db_lock = self.db_config.read().unwrap();
-        let config = db_lock.as_ref().ok_or("Database configuration not initialized")?;
+    pub async fn generate_db_token(&self) -> Result<DatabaseAuthToken, String> {
+        let config = {
+            let lock = self.db_config.read().unwrap();
+            lock.as_ref().ok_or("Database configuration not initialized")?.clone()
+        };
 
         let ttl_seconds = 900; // 15 minutes
         let expires_at = Utc::now() + Duration::seconds(ttl_seconds);
 
-        // In AWS production, this invokes aws_sdk_rds::auth_token::build_auth_token.
-        // For local development or mock verification, we mint an authenticated token.
-        let token = format!(
-            "rds-db-token-{}-{}-{}",
-            config.user,
-            config.region,
-            Utc::now().timestamp()
-        );
+        // Resolve AWS credentials from ECS link-local metadata agent or environment
+        let token = match crate::sigv4::resolve_aws_credentials().await {
+            Ok(creds) => {
+                crate::sigv4::generate_rds_iam_token(
+                    &config.host,
+                    config.port,
+                    &config.user,
+                    &config.region,
+                    &creds,
+                )?
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Could not resolve AWS credentials for RDS IAM token: {}. Using development fallback.",
+                    e
+                );
+                format!(
+                    "dev-fallback-token-{}-{}-{}",
+                    config.user,
+                    config.region,
+                    Utc::now().timestamp()
+                )
+            }
+        };
 
         Ok(DatabaseAuthToken {
-            db_host: config.host.clone(),
+            db_host: config.host,
             db_port: config.port,
-            db_user: config.user.clone(),
-            db_name: config.database.clone(),
+            db_user: config.user,
+            db_name: config.database,
             auth_token: token,
             expires_at,
             ttl_seconds,

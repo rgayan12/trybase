@@ -10,6 +10,11 @@ output "db_hostname" {
   value       = aws_db_instance.main.address
 }
 
+output "db_resource_id" {
+  description = "The RDS Resource ID (DbiResourceId) for RDS IAM authentication."
+  value       = aws_db_instance.main.resource_id
+}
+
 output "db_credentials_secret_arn" {
   description = "The ARN of the secret containing the master database credentials."
   value       = aws_secretsmanager_secret.db_credentials.arn

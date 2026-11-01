@@ -108,6 +108,35 @@ resource "aws_iam_role_policy_attachment" "bedrock_access" {
   policy_arn = aws_iam_policy.bedrock_access[0].arn
 }
 
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+resource "aws_iam_policy" "rds_iam_access" {
+  count       = var.enable_rds_iam ? 1 : 0
+  name        = "trybase-${var.service_name}-rds-iam"
+  description = "Allows tenant workload '${var.service_name}' to connect to RDS via IAM database authentication"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "RdsDbConnect"
+        Effect = "Allow"
+        Action = ["rds-db:connect"]
+        Resource = [
+          "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:${var.rds_resource_id}/${var.rds_db_user}"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "rds_iam_access" {
+  count      = var.enable_rds_iam ? 1 : 0
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.rds_iam_access[0].arn
+}
+
 
 # ------------------------------------------------------------------------------
 # ECS Task Definition & Service

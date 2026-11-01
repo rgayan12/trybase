@@ -1,0 +1,25 @@
+{
+  "name": "@trybase/client",
+  "version": "1.0.0",
+  "description": "Kernel-authenticated zero-secret and dynamic RDS IAM client for Node.js and TypeScript",
+  "main": "dist/client.js",
+  "types": "dist/client.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "trybase",
+    "secrets",
+    "security",
+    "anti-leak",
+    "rds-iam",
+    "microvm"
+  ],
+  "author": "TryBase Core Team <security@trybase.io>",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.3"
+  }
+}

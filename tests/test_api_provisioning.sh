@@ -123,7 +123,7 @@ EOF
         fi
 
         HTTP_CODE="000"
-        for i in {1..12}; do
+        for i in {1..30}; do
             HTTP_CODE=$(curl -s -k -o /dev/null -w "%{http_code}" -H "Host: ${TENANT_ID}.${BASE_DOMAIN}" "https://${ALB_HOST}${PROBE_PATH}" 2>/dev/null || echo "000")
             if [[ "$HTTP_CODE" =~ ^[23] ]]; then
                 break

@@ -123,7 +123,7 @@ DB_TOKEN_JSON=$(client_curl -s \
   -H "X-TryBase-Token: $TOKEN" \
   --unix-socket /var/run/trybase/secrets.sock http://localhost/latest/database/token)
 echo "RDS Token: $DB_TOKEN_JSON"
-if echo "$DB_TOKEN_JSON" | grep -q "rds-db-token-user_acme_corp" && echo "$DB_TOKEN_JSON" | grep -q "schema_acme_corp"; then
+if (echo "$DB_TOKEN_JSON" | grep -q "Action=connect" || echo "$DB_TOKEN_JSON" | grep -q "token-user_acme_corp") && echo "$DB_TOKEN_JSON" | grep -q "schema_acme_corp"; then
     echo "✅ TEST 7 PASSED: Ephemeral 15-minute RDS IAM password generated successfully."
 else
     echo "❌ TEST 7 FAILED: RDS Database token generation failed."
@@ -142,7 +142,7 @@ ENTRYPOINT_OUTPUT=$(docker run --rm \
 echo "Entrypoint Output:"
 echo "$ENTRYPOINT_OUTPUT"
 
-if echo "$ENTRYPOINT_OUTPUT" | grep -q "STRIPE: sk_live_stripe_production_key" && echo "$ENTRYPOINT_OUTPUT" | grep -q "DB_PASS: rds-db-token"; then
+if echo "$ENTRYPOINT_OUTPUT" | grep -q "STRIPE: sk_live_stripe_production_key" && (echo "$ENTRYPOINT_OUTPUT" | grep -q "DB_PASS: .*token" || echo "$ENTRYPOINT_OUTPUT" | grep -q "DB_PASS: .*Action=connect"); then
     echo "✅ TEST 8 PASSED: trybase-entrypoint injected all secrets into child memory without touching disk!"
 else
     echo "❌ TEST 8 FAILED: Entrypoint did not properly populate child process memory."

@@ -232,7 +232,7 @@ resource "aws_ecs_service" "service" {
   tags = {
     Service     = "trybase"
     Environment = "Prod"
-    Tenant      = var.tenant_id
+    Tenant      = var.tenant_id != "" ? var.tenant_id : var.service_name
   }
 
   network_configuration {

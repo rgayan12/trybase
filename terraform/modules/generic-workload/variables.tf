@@ -138,3 +138,9 @@ variable "rds_db_user" {
   default     = "*"
 }
 
+variable "tenant_id" {
+  description = "Tenant identifier for tagging and resource naming."
+  type        = string
+  default     = ""
+}
+

@@ -138,7 +138,7 @@ resource "aws_sfn_state_machine" "provision_tenant" {
           {
             Variable  = "$.workload_type"
             IsPresent = true
-            Next      = "ProvisionInfrastructure"
+            Next      = "CreateDatabaseSchema"
           }
         ]
         Default = "SetDefaultWorkloadType"
@@ -148,7 +148,32 @@ resource "aws_sfn_state_machine" "provision_tenant" {
         Type       = "Pass"
         Result     = "n8n"
         ResultPath = "$.workload_type"
+        Next       = "CreateDatabaseSchema"
+      }
+
+      CreateDatabaseSchema = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::lambda:invoke"
+        Parameters = {
+          FunctionName = aws_lambda_function.create_schema.arn
+          Payload = {
+            "tenant_id.$"     = "$.tenant_id"
+            "workload_type.$" = "$.workload_type"
+          }
+        }
+        ResultPath = "$.schema_result"
         Next       = "ProvisionInfrastructure"
+        Retry = [{
+          ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException"]
+          IntervalSeconds = 5
+          MaxAttempts     = 3
+          BackoffRate     = 2
+        }]
+        Catch = [{
+          ErrorEquals = ["States.ALL"]
+          Next        = "ProvisioningFailed"
+          ResultPath  = "$.error"
+        }]
       }
 
       ProvisionInfrastructure = {
@@ -175,32 +200,7 @@ resource "aws_sfn_state_machine" "provision_tenant" {
           ]
         }
         ResultPath = "$.codebuild_result"
-        Next       = "CreateDatabaseSchema"
-        Catch = [{
-          ErrorEquals = ["States.ALL"]
-          Next        = "ProvisioningFailed"
-          ResultPath  = "$.error"
-        }]
-      }
-
-      CreateDatabaseSchema = {
-        Type     = "Task"
-        Resource = "arn:aws:states:::lambda:invoke"
-        Parameters = {
-          FunctionName = aws_lambda_function.create_schema.arn
-          Payload = {
-            "tenant_id.$"     = "$.tenant_id"
-            "workload_type.$" = "$.workload_type"
-          }
-        }
-        ResultPath = "$.schema_result"
         Next       = "NotifySuccess"
-        Retry = [{
-          ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException"]
-          IntervalSeconds = 5
-          MaxAttempts     = 3
-          BackoffRate     = 2
-        }]
         Catch = [{
           ErrorEquals = ["States.ALL"]
           Next        = "ProvisioningFailed"

@@ -93,12 +93,19 @@ def handler(event, context):
                     cursor.execute(f'ALTER USER "{db_user_scoped}" WITH PASSWORD %s;', (tenant_db_password,))
                     logger.info(f"Updated password for scoped user '{db_user_scoped}'")
 
-                # Grant rds_iam so AWS SigV4 IAM tokens are accepted as valid passwords
-                try:
-                    cursor.execute(f'GRANT rds_iam TO "{db_user_scoped}";')
-                    logger.info(f"Granted rds_iam role to '{db_user_scoped}'")
-                except Exception as rds_iam_err:
-                    logger.warning(f"Could not grant rds_iam (non-fatal): {rds_iam_err}")
+                # Only grant rds_iam if workload explicitly uses AWS IAM SigV4 tokens.
+                # If rds_iam is granted to a user attempting standard password auth, RDS PAM rejects the connection.
+                if event.get('use_iam_auth', False):
+                    try:
+                        cursor.execute(f'GRANT rds_iam TO "{db_user_scoped}";')
+                        logger.info(f"Granted rds_iam role to '{db_user_scoped}'")
+                    except Exception as rds_iam_err:
+                        logger.warning(f"Could not grant rds_iam (non-fatal): {rds_iam_err}")
+                else:
+                    try:
+                        cursor.execute(f'REVOKE rds_iam FROM "{db_user_scoped}";')
+                    except Exception:
+                        pass
 
                 # 2. Create dedicated database owned by the scoped user
                 cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))

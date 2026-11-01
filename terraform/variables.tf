@@ -28,7 +28,7 @@ variable "base_domain" {
 variable "acm_certificate_arn" {
   description = "ARN of the AWS ACM SSL certificate for *.apps.yourdomain.com (required for HTTPS ALB listener)"
   type        = string
-  default     = "arn:aws:acm:eu-west-2:656876168893:certificate/cccdf28e-f81f-46cd-bff4-d17f9916fe5f"
+  default     = "arn:aws:acm:eu-west-2:656876168893:certificate/147ae547-6608-4090-b70a-bc5f5d1f77a0"
 }
 
 variable "state_bucket_name" {

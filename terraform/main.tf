@@ -24,9 +24,10 @@ provider "aws" {
 
   default_tags {
     tags = {
+      Service     = "trybase"
+      Environment = title(var.environment) # Ensures "Prod", "Dev", or "Stage"
       Project     = var.project_name
       ManagedBy   = "Terraform"
-      Environment = var.environment
     }
   }
 }

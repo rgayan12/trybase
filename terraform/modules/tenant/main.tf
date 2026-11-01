@@ -138,13 +138,20 @@ resource "aws_ecs_task_definition" "n8n" {
 }
 
 resource "aws_ecs_service" "n8n" {
-  name            = "n8n-${var.tenant_id}"
-  cluster         = var.ecs_cluster_name
-  task_definition = aws_ecs_task_definition.n8n.arn
-  desired_count   = 1 # This can be exposed as a variable for tiered plans
-  launch_type     = "FARGATE"
+  name                   = "n8n-${var.tenant_id}"
+  cluster                = var.ecs_cluster_name
+  task_definition        = aws_ecs_task_definition.n8n.arn
+  desired_count          = 1 # This can be exposed as a variable for tiered plans
+  launch_type            = "FARGATE"
   enable_execute_command = true
   wait_for_steady_state  = true # Fixes the 503 error: don't report success until the app is fully online
+  propagate_tags         = "SERVICE"
+
+  tags = {
+    Service     = "trybase"
+    Environment = "Prod"
+    Tenant      = var.tenant_id
+  }
 
   network_configuration {
     security_groups = [aws_security_group.n8n.id]

@@ -9,6 +9,40 @@ resource "aws_ecr_repository" "create_schema_lambda" {
   }
 }
 
+resource "aws_ecr_lifecycle_policy" "create_schema_lambda" {
+  repository = aws_ecr_repository.create_schema_lambda.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Expire untagged images older than 14 days"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 14
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Keep last 10 tagged images"
+        selection = {
+          tagStatus     = "any"
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
 # Automatically build and push the create-schema Lambda container image
 resource "null_resource" "build_create_schema_lambda" {
   triggers = {
@@ -39,6 +73,41 @@ resource "aws_ecr_repository" "n8n_base" {
     scan_on_push = true
   }
 }
+
+resource "aws_ecr_lifecycle_policy" "n8n_base" {
+  repository = aws_ecr_repository.n8n_base.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Expire untagged images older than 14 days"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 14
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Keep last 5 images"
+        selection = {
+          tagStatus     = "any"
+          countType     = "imageCountMoreThan"
+          countNumber   = 5
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
 
 # Automatically Mirror the n8n image during Terraform Apply
 resource "null_resource" "mirror_n8n" {

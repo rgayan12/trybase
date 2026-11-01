@@ -192,11 +192,19 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 resource "aws_ecs_service" "service" {
-  name            = var.service_name
-  cluster         = var.ecs_cluster_name
-  task_definition = aws_ecs_task_definition.service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                   = var.service_name
+  cluster                = var.ecs_cluster_name
+  task_definition        = aws_ecs_task_definition.service.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+  propagate_tags         = "SERVICE"
+
+  tags = {
+    Service     = "trybase"
+    Environment = "Prod"
+    Tenant      = var.tenant_id
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids

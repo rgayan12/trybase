@@ -186,6 +186,7 @@ resource "aws_lambda_function" "notify_success" {
   role             = aws_iam_role.notify_success_lambda.arn
   handler          = "index.handler"
   runtime          = "nodejs20.x"
+  architectures    = ["arm64"]
   filename         = data.archive_file.notify_success_zip.output_path
   source_code_hash = data.archive_file.notify_success_zip.output_base64sha256
   timeout          = 10

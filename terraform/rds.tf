@@ -79,16 +79,20 @@ resource "aws_db_instance" "main" {
   engine                    = "postgres"
   engine_version            = "16.11"
   instance_class            = "db.t4g.micro" # Upgraded to ARM64 (Graviton 2) for better price/performance
-  allocated_storage         = 20
-  storage_type              = "gp2"
-  username                  = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
-  password                  = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
-  db_subnet_group_name      = aws_db_subnet_group.default.name
-  vpc_security_group_ids    = [aws_security_group.rds.id]
-  parameter_group_name      = aws_db_parameter_group.main.name
-  publicly_accessible       = false # Important for security
-  apply_immediately         = true  # Force architectural changes to happen now, not during the next maintenance window
-  backup_retention_period   = 7
-  skip_final_snapshot       = var.rds_skip_final_snapshot
-  final_snapshot_identifier = var.rds_skip_final_snapshot ? null : "n8n-hosting-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  allocated_storage               = 20
+  storage_type                    = "gp3" # 20% lower cost per GB than gp2 with independent IOPS
+  storage_encrypted               = true  # Encryption at-rest (corresponds to AWS Security Hub RDS.3)
+  copy_tags_to_snapshot           = true  # Retain resource tags on DB snapshots (RDS.16, RDS.17)
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"] # Export logs for monitoring/auditing (RDS.9)
+  username                        = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
+  password                        = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
+  db_subnet_group_name            = aws_db_subnet_group.default.name
+  vpc_security_group_ids          = [aws_security_group.rds.id]
+  parameter_group_name            = aws_db_parameter_group.main.name
+  publicly_accessible             = false # Important for security
+  apply_immediately               = true  # Force architectural changes to happen now, not during the next maintenance window
+  backup_retention_period         = 7
+  skip_final_snapshot             = var.rds_skip_final_snapshot
+  final_snapshot_identifier       = var.rds_skip_final_snapshot ? null : "n8n-hosting-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
 }
+

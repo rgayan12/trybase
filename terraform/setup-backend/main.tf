@@ -3,9 +3,10 @@ provider "aws" {
 
   default_tags {
     tags = {
+      Service     = "trybase"
+      Environment = "Dev"
       Project     = "n8n-hosting-saas-backend"
       ManagedBy   = "Terraform"
-      Environment = "dev"
     }
   }
 }
@@ -13,6 +14,32 @@ provider "aws" {
 # S3 bucket for storing Terraform state
 resource "aws_s3_bucket" "tfstate" {
   bucket = "n8n-hosting-saas-tfstate"
+}
+
+# Enforce in-transit SSL (HTTPS) requests only (corresponds to AWS Security Hub S3.5)
+resource "aws_s3_bucket_policy" "tfstate_ssl" {
+  bucket = aws_s3_bucket.tfstate.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnforceTLSRequestsOnly"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.tfstate.arn,
+          "${aws_s3_bucket.tfstate.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
 }
 
 # Enable versioning on the S3 bucket

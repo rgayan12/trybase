@@ -40,6 +40,7 @@ resource "aws_lambda_function" "authorizer" {
   role             = aws_iam_role.authorizer_lambda.arn
   handler          = "index.handler"
   runtime          = "nodejs18.x"
+  architectures    = ["arm64"]
   source_code_hash = data.archive_file.authorizer_zip.output_base64sha256
 
   environment {

@@ -26,9 +26,9 @@ variable "base_domain" {
 }
 
 variable "acm_certificate_arn" {
-  description = "ARN of the AWS ACM SSL certificate for *.apps.yourdomain.com (required for HTTPS ALB listener)"
+  description = "ARN of the AWS ACM SSL certificate for *.apps.yourdomain.com (required for HTTPS ALB listener). If empty, looks up wildcard cert for base_domain automatically."
   type        = string
-  default     = "arn:aws:acm:eu-west-2:656876168893:certificate/147ae547-6608-4090-b70a-bc5f5d1f77a0"
+  default     = ""
 }
 
 variable "state_bucket_name" {
@@ -42,19 +42,19 @@ variable "state_bucket_name" {
 variable "supabase_url" {
   description = "The URL of the Supabase project control plane"
   type        = string
-  default     = "https://yfnnxtzkbylezkufppgm.supabase.co"
+  default     = "https://your-project.supabase.co"
 }
 
 variable "supabase_jwk_x" {
   description = "JWK coordinate X for ES256 Supabase JWT verification"
   type        = string
-  default     = "jRwuD1S2cDatOVdbi3sileVxuwh_ZlIKqSl1vlgvCd8"
+  default     = "YOUR_SUPABASE_JWK_X_COORDINATE"
 }
 
 variable "supabase_jwk_y" {
   description = "JWK coordinate Y for ES256 Supabase JWT verification"
   type        = string
-  default     = "qXpO7uPc1x-tuYUoF-DGddIi7gEOCc6IOa0l8ec_0TU"
+  default     = "YOUR_SUPABASE_JWK_Y_COORDINATE"
 }
 
 variable "cors_allowed_origins" {

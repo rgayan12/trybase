@@ -57,8 +57,8 @@ alb_dns_name            = "trybase-alb-123456789.eu-west-2.elb.amazonaws.com"
 api_gateway_url         = "https://api.trybase.yourdomain.com/v1"
 ecs_cluster_name        = "trybase-production-cluster"
 rds_endpoint            = "trybase-db.c123456789.eu-west-2.rds.amazonaws.com:5432"
-step_function_arn       = "arn:aws:states:eu-west-2:656876168893:stateMachine:trybase-orchestrator"
-wildcard_certificate_arn = "arn:aws:acm:eu-west-2:656876168893:certificate/a1b2c3d4-..."
+step_function_arn       = "arn:aws:states:eu-west-2:123456789012:stateMachine:trybase-orchestrator"
+wildcard_certificate_arn = "arn:aws:acm:eu-west-2:123456789012:certificate/a1b2c3d4-..."
 ```
 
 ---

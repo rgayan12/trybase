@@ -1,15 +1,22 @@
 import { SFNClient, ListExecutionsCommand } from '@aws-sdk/client-sfn';
 import { loadConfig } from '../config.js';
 import { listControlPlaneWorkspaces } from '../supabase.js';
+import { resolveStepFunctionArn } from '../utils/sfn.js';
 
-const DEFAULT_SFN_ARN = process.env.TRYBASE_SFN_ARN || 'arn:aws:states:eu-west-2:656876168893:stateMachine:n8n-provision-tenant';
 const DEFAULT_REGION = process.env.AWS_REGION || 'eu-west-2';
 
 export async function statusCommand(options: { org?: string }): Promise<void> {
   const config = loadConfig();
   const org = options.org || config.defaultOrg || 'default';
   const region = process.env.AWS_REGION || config.region || DEFAULT_REGION;
-  const sfnArn = process.env.TRYBASE_SFN_ARN || DEFAULT_SFN_ARN;
+  let sfnArn = process.env.TRYBASE_SFN_ARN;
+  if (!sfnArn) {
+    try {
+      sfnArn = await resolveStepFunctionArn(region);
+    } catch {
+      sfnArn = undefined;
+    }
+  }
 
   console.log(`\n🏢 TryBase Fleet Status for Organization: "${org}"`);
   console.log(`═`.repeat(75));

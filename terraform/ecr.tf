@@ -128,3 +128,71 @@ EOF
 
   depends_on = [aws_ecr_repository.n8n_base]
 }
+
+# ------------------------------------------------------------------------------
+# TryBase Anti-Leak Daemon ECR Repository
+# ------------------------------------------------------------------------------
+
+resource "aws_ecr_repository" "trybase_daemon" {
+  name                 = "trybase/trybase-daemon"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "trybase_daemon" {
+  repository = aws_ecr_repository.trybase_daemon.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Expire untagged images older than 14 days"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 14
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Keep last 5 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 5
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# Automatically Build and Push trybase-daemon image during Terraform Apply
+resource "null_resource" "build_trybase_daemon" {
+  triggers = {
+    cargo_toml_sha = fileexists("${path.module}/../daemon/Cargo.toml") ? filesha256("${path.module}/../daemon/Cargo.toml") : "remote"
+    dockerfile_sha = fileexists("${path.module}/../daemon/Dockerfile") ? filesha256("${path.module}/../daemon/Dockerfile") : "remote"
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      REGISTRY_URL=$(echo "${aws_ecr_repository.trybase_daemon.repository_url}" | cut -d'/' -f1)
+      aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin $REGISTRY_URL
+      docker build --platform linux/arm64 -t ${aws_ecr_repository.trybase_daemon.repository_url}:latest ${path.module}/../daemon
+      docker push ${aws_ecr_repository.trybase_daemon.repository_url}:latest
+EOF
+  }
+
+  depends_on = [aws_ecr_repository.trybase_daemon]
+}
+

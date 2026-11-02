@@ -72,7 +72,7 @@ Every foundation model invocation, S3 upload, or STS token generation is recorde
   "eventSource": "bedrock.amazonaws.com",
   "userIdentity": {
     "type": "AssumedRole",
-    "arn": "arn:aws:sts::656876168893:assumed-role/trybase-fast-sam-soars-task-role/task-id"
+    "arn": "arn:aws:sts::123456789012:assumed-role/trybase-fast-sam-soars-task-role/task-id"
   },
   "sourceIPAddress": "10.0.10.142"
 }

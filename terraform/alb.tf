@@ -69,6 +69,13 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+data "aws_acm_certificate" "wildcard" {
+  count       = var.acm_certificate_arn == "" ? 1 : 0
+  domain      = "*.${var.base_domain}"
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
+
 # Listener for HTTPS traffic on port 443
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
@@ -76,7 +83,7 @@ resource "aws_lb_listener" "https" {
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
 
-  certificate_arn = var.acm_certificate_arn
+  certificate_arn = var.acm_certificate_arn != "" ? var.acm_certificate_arn : data.aws_acm_certificate.wildcard[0].arn
 
   # Default action for requests that don't match any tenant-specific rules.
   # We'll forward them to the default target group which will return a 404.

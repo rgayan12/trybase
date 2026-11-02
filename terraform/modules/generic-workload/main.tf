@@ -137,6 +137,35 @@ resource "aws_iam_role_policy_attachment" "rds_iam_access" {
   policy_arn = aws_iam_policy.rds_iam_access[0].arn
 }
 
+resource "aws_iam_policy" "anti_leak_secrets" {
+  count       = var.enable_anti_leak ? 1 : 0
+  name        = "trybase-${var.service_name}-secrets"
+  description = "Allows TryBase anti-leak daemon to fetch scoped tenant secrets from AWS Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "TenantSecretsAccess"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = [
+          "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:trybase/tenants/${var.tenant_id != "" ? var.tenant_id : var.service_name}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "anti_leak_secrets" {
+  count      = var.enable_anti_leak ? 1 : 0
+  role       = aws_iam_role.task_role.name
+  policy_arn = aws_iam_policy.anti_leak_secrets[0].arn
+}
+
 
 # ------------------------------------------------------------------------------
 # ECS Task Definition & Service
@@ -157,13 +186,17 @@ resource "aws_ecs_task_definition" "service" {
     cpu_architecture        = var.cpu_architecture
   }
 
+  volume {
+    name = "trybase-socket"
+  }
+
   container_definitions = jsonencode(concat(
     [
       {
         name      = var.service_name
         image     = var.container_image
-        cpu       = var.enable_redis ? (var.cpu - 128) : var.cpu
-        memory    = var.enable_redis ? (var.memory - 256) : var.memory
+        cpu       = var.cpu - (var.enable_redis ? 128 : 0) - (var.enable_anti_leak ? var.daemon_cpu : 0)
+        memory    = var.memory - (var.enable_redis ? 256 : 0) - (var.enable_anti_leak ? var.daemon_memory : 0)
         essential = true
 
         portMappings = [
@@ -173,6 +206,14 @@ resource "aws_ecs_task_definition" "service" {
             protocol      = "tcp"
           }
         ]
+
+        mountPoints = var.enable_anti_leak ? [
+          {
+            sourceVolume  = "trybase-socket"
+            containerPath = "/var/run/trybase"
+            readOnly      = false
+          }
+        ] : []
 
         environment = [
           for k, v in var.environment_variables : {
@@ -185,12 +226,44 @@ resource "aws_ecs_task_definition" "service" {
           logDriver = "awslogs"
           options = {
             "awslogs-group"         = aws_cloudwatch_log_group.service.name
-            "awslogs-region"        = "eu-west-2"
+            "awslogs-region"        = data.aws_region.current.name
             "awslogs-stream-prefix" = "workload"
           }
         }
       }
     ],
+    var.enable_anti_leak ? [
+      {
+        name      = "${var.service_name}-daemon"
+        image     = var.daemon_image != "" ? var.daemon_image : "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/trybase/trybase-daemon:latest"
+        cpu       = var.daemon_cpu
+        memory    = var.daemon_memory
+        essential = true
+
+        environment = [
+          { name = "TRYBASE_SOCKET_PATH", value = "/var/run/trybase/secrets.sock" },
+          { name = "TRYBASE_TENANT_ID",   value = var.tenant_id != "" ? var.tenant_id : var.service_name },
+          { name = "AWS_DEFAULT_REGION",  value = data.aws_region.current.name }
+        ]
+
+        mountPoints = [
+          {
+            sourceVolume  = "trybase-socket"
+            containerPath = "/var/run/trybase"
+            readOnly      = false
+          }
+        ]
+
+        logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = aws_cloudwatch_log_group.service.name
+            "awslogs-region"        = data.aws_region.current.name
+            "awslogs-stream-prefix" = "daemon"
+          }
+        }
+      }
+    ] : [],
     var.enable_redis ? [
       {
         name      = "${var.service_name}-redis"
@@ -211,7 +284,7 @@ resource "aws_ecs_task_definition" "service" {
           logDriver = "awslogs"
           options = {
             "awslogs-group"         = aws_cloudwatch_log_group.service.name
-            "awslogs-region"        = "eu-west-2"
+            "awslogs-region"        = data.aws_region.current.name
             "awslogs-stream-prefix" = "redis"
           }
         }

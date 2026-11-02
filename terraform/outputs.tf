@@ -44,3 +44,9 @@ output "codebuild_project_name" {
   description = "The CodeBuild project used to run Terraform tenant deployments."
   value       = aws_codebuild_project.provision_tenant.name
 }
+
+output "trybase_daemon_repository_url" {
+  description = "The URL of the ECR repository for the TryBase Anti-Leak secret daemon sidecar."
+  value       = aws_ecr_repository.trybase_daemon.repository_url
+}
+

@@ -12,6 +12,7 @@ export interface FleetWorkloadConfig {
   memory?: number;
   envFile?: string;
   secrets?: Record<string, string>;
+  enableAntiLeak?: boolean;
 }
 
 export interface FleetManifest {
@@ -61,8 +62,8 @@ import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 import { SecretsManagerClient, PutSecretValueCommand, CreateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { loadConfig } from '../config.js';
 import { upsertControlPlaneWorkspace } from '../supabase.js';
+import { resolveStepFunctionArn } from '../utils/sfn.js';
 
-const DEFAULT_SFN_ARN = process.env.TRYBASE_SFN_ARN || 'arn:aws:states:eu-west-2:656876168893:stateMachine:n8n-provision-tenant';
 const DEFAULT_REGION = process.env.AWS_REGION || 'eu-west-2';
 
 function getPriorityForTenant(tenantId: string): number {
@@ -80,24 +81,6 @@ export async function deployFleet(
 ): Promise<{ organization: string; workloadsCount: number; executions?: string[] }> {
   const manifest = parseFleetManifest(manifestPath);
   const config = loadConfig();
-  const region = process.env.AWS_REGION || config.region || DEFAULT_REGION;
-  const sfnArn = process.env.TRYBASE_SFN_ARN || DEFAULT_SFN_ARN;
-
-  if (!options.quiet) {
-    console.log(`🚀 [TryBase Fleet Deploy] Organization: "${manifest.organization}"`);
-    console.log(`   Found ${manifest.workloads.length} workload(s) in manifest:\n`);
-
-    for (const w of manifest.workloads) {
-      console.log(`   • [${w.archetype.toUpperCase()}] ${w.name}`);
-      console.log(`     Route:     https://${w.subdomain}`);
-      console.log(`     Resources: ${w.cpu || 512} vCPU / ${w.memory || 1024} MB RAM`);
-      if (w.secrets) {
-        console.log(`     Secrets:   ${Object.keys(w.secrets).length} loaded (Anti-Leak protected)`);
-      }
-      console.log('');
-    }
-  }
-
   if (options.dryRun) {
     if (!options.quiet) {
       console.log(`✅ [DRY RUN] Fleet deployment validated. All archetypes and routing valid.`);
@@ -105,6 +88,8 @@ export async function deployFleet(
     return { organization: manifest.organization, workloadsCount: manifest.workloads.length };
   }
 
+  const region = process.env.AWS_REGION || config.region || DEFAULT_REGION;
+  const sfnArn = await resolveStepFunctionArn(region);
   const sfnClient = new SFNClient({ region });
   const smClient = new SecretsManagerClient({ region });
   const executions: string[] = [];
@@ -114,7 +99,15 @@ export async function deployFleet(
     const priority = getPriorityForTenant(tenantId);
 
     // 1. Sync / Register in Supabase Control Plane so web dashboard reflects it
-    const workloadType = w.archetype === 'openmuse' ? 'openmuse' : w.archetype === 'openclaw' ? 'openclaw' : w.archetype === 'dify' ? 'dify' : 'n8n';
+    const normalizedArchetype = w.archetype.toLowerCase();
+    const workloadType = ['openmuse', 'openclaw', 'dify', 'laravel', 'django', 'agent', 'hello'].includes(normalizedArchetype)
+      ? normalizedArchetype
+      : 'n8n';
+
+    const enableAntiLeak = w.enableAntiLeak !== undefined
+      ? w.enableAntiLeak
+      : ['openclaw', 'openmuse', 'laravel', 'django'].includes(workloadType);
+
     const synced = await upsertControlPlaneWorkspace({
       tenantId,
       archetype: workloadType,
@@ -153,6 +146,7 @@ export async function deployFleet(
         workload_type: workloadType,
         alb_listener_rule_priority: priority,
         subdomain: w.subdomain,
+        enable_anti_leak: enableAntiLeak,
       };
 
       const execRes = await sfnClient.send(new StartExecutionCommand({

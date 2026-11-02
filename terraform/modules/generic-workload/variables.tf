@@ -144,3 +144,28 @@ variable "tenant_id" {
   default     = ""
 }
 
+variable "enable_anti_leak" {
+  description = "Enable the TryBase Anti-Leak secret daemon sidecar with shared /var/run/trybase UDS volume"
+  type        = bool
+  default     = false
+}
+
+variable "daemon_image" {
+  description = "Docker container image for the TryBase secret daemon sidecar (defaults to regional trybase/trybase-daemon ECR repo)"
+  type        = string
+  default     = ""
+}
+
+variable "daemon_cpu" {
+  description = "CPU units allocated to the anti-leak daemon sidecar (64 = 0.0625 vCPU)"
+  type        = number
+  default     = 64
+}
+
+variable "daemon_memory" {
+  description = "Memory in MiB allocated to the anti-leak daemon sidecar"
+  type        = number
+  default     = 128
+}
+
+

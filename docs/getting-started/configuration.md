@@ -182,7 +182,7 @@ VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_... (or your anon public key)
 
 # AWS API Gateway Provisioning Endpoint (from 'terraform output api_gateway_url' or make infra)
-VITE_API_GATEWAY_URL=https://pweai7qxlh.execute-api.eu-west-2.amazonaws.com/provision
+VITE_API_GATEWAY_URL=https://<api-gateway-id>.execute-api.eu-west-2.amazonaws.com/provision
 ```
 
 > [!NOTE]
